@@ -2,8 +2,23 @@ const dao = require('../database/dao');
 
 exports.handleApi = 
 function handleApi (router) {
-    router.post('/user', async ctx => {
+    router.post('/login/register', async ctx => {
         var body = ctx.request.body;
+        // Check is user exist
+        [err, res] = await dao.isUserNameExist(body.username);
+        if(err){
+            ctx.body = {
+                'errMessage': err
+            };
+            return;
+        }
+        if(res == true){
+            ctx.body = {
+                'errMessage': 'Username [' + body.username + '] already exists!'
+            };
+            return;
+        }
+        // Add user
         [err, res] = await dao.addUser({
             'username': body.username,
             'password': body.password,

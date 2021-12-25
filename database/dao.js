@@ -38,3 +38,11 @@ function getAllUsers () {
     .then(result => [null, result])
     .catch(err => [err]);
 }
+
+exports.isUserNameExist = 
+function isUserNameExist (username) {
+    return models.userModel.exists({
+        username: username
+    }).then(result => [null, result])
+    .catch(err => [err]);
+}
