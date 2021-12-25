@@ -1,0 +1,9 @@
+{
+    "database": {
+        "mongodb": {
+            "host": "139.196.48.129",
+            "port": "27017",
+            "collection": "web-im"
+        }
+    }
+}

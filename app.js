@@ -12,8 +12,9 @@ const dao = require('./database/dao');
 const apiHandler = require('./apiHandler/apiHandler');
 /////////////////////////////////////////////////////////////
 
+const config = require('./config.json')
 const app = new Koa(); // 创建 Koa 服务
-dao.connect(app, 'mongodb://127.0.0.1:27017/web-im')
+dao.connect(app, 'mongodb://' + config.database.mongodb.host + ':' + config.database.mongodb.port + '/' + config.database.mongodb.collection)
 .then(() => {
     console.log('Connect to mongodb successed.');
 
