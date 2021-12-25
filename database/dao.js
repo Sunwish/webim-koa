@@ -46,3 +46,11 @@ function isUserNameExist (username) {
     }).then(result => [null, result])
     .catch(err => [err]);
 }
+
+exports.isEmailExist = 
+function isEmailExist (email) {
+    return models.userModel.exists({
+        email: email
+    }).then(result => [null, result])
+    .catch(err => [err]);
+}

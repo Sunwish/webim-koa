@@ -4,6 +4,19 @@ exports.handleApi =
 function handleApi (router) {
     router.post('/login/register', async ctx => {
         var body = ctx.request.body;
+        // Check infomation integrity
+        if(body.username == null || body.username == ''){
+            ctx.body = {
+                'errMessage': 'Username connot be empty.'
+            };
+            return;
+        }
+        if(body.email == null || body.email == ''){
+            ctx.body = {
+                'errMessage': 'Email connot be empty.'
+            };
+            return;
+        }
         // Check is user exist
         [err, res] = await dao.isUserNameExist(body.username);
         if(err){
@@ -15,6 +28,19 @@ function handleApi (router) {
         if(res == true){
             ctx.body = {
                 'errMessage': 'Username [' + body.username + '] already exists!'
+            };
+            return;
+        }
+        [err, res] = await dao.isEmailExist(body.email)
+        if(err){
+            ctx.body = {
+                'errMessage': err
+            };
+            return;
+        }
+        if(res == true){
+            ctx.body = {
+                'errMessage': 'Email [' + body.email + '] already exists!'
             };
             return;
         }
@@ -36,6 +62,10 @@ function handleApi (router) {
             'errMessage': err,
             'result': res
         }
+    })
+    router.post('/login/login', async ctx => {
+        var body = ctx.request.body;
+
     })
     /* // 测试一下
     router.get('/', async cxt => {
