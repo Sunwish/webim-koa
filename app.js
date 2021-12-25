@@ -22,6 +22,26 @@ dao.connect(app, 'mongodb://127.0.0.1:27017/web-im')
     app.listen(12345, () => {
         console.log('Koa listening on port 5000.');
     })
+    router.post('/user', async ctx => {
+        var body = ctx.request.body;
+        [err, res] = await dao.addUser({
+            'username': body.username,
+            'password': body.password,
+            'email': body.email,
+            'avatar': body.avater
+        });
+        ctx.body = {
+            'errMessage': err,
+            'result': res
+        }
+    })
+    router.get('/users', async ctx => {
+        [err, res] = await dao.getAllUsers();
+        ctx.body = {
+            'errMessage': err,
+            'result': res
+        }
+    })
     // 测试一下
     router.get('/', async cxt => {
         cxt.body = 'Hello Web IM Api!';

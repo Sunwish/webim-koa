@@ -4,8 +4,6 @@ const bodyParser = require('body-parser');
 
 exports.connect = 
 function connect (app, connectString) {
-    app.use(bodyParser.urlencoded({ extended: false }));
-    app.use(bodyParser.json());
     return new Promise((resolve, reject) => {
         mongo.connect(connectString, {
             useUnifiedTopology: true,
@@ -18,3 +16,25 @@ function connect (app, connectString) {
 }
 
 /////////////////////////////////////////////////
+
+exports.addUser = 
+function addUser (user) {
+    const randamAvatar =  'https://api.prodless.com/avatar.png';
+    var avatar = randamAvatar;
+    if(user.avatar && user.avatar != '') { avatar = user.avatar; }
+    return new models.userModel({
+        'username': user.username,
+        'password': user.password,
+        'email': user.email,
+        'avatar': avatar
+    }).save()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
+
+exports.getAllUsers =
+function getAllUsers () {
+    return models.userModel.find({}).exec()
+    .then(result => [null, result])
+    .catch(err => [err]);
+}
