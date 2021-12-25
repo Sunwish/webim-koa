@@ -1,9 +1,24 @@
 {
-    "database": {
-        "mongodb": {
-            "host": "139.196.48.129",
-            "port": "27017",
-            "collection": "web-im"
+    "mode": "debug",
+    "debug": {
+        "koa": {
+            "port": "12345"
+        },
+        "database": {
+            "mongodb": {
+                "host": "127.0.0.1",
+                "port": "27017",
+                "collection": "web-im"
+            }
+        }
+    },
+    "production": {
+        "database": {
+            "mongodb": {
+                "host": "139.196.48.129",
+                "port": "27017",
+                "collection": "web-im"
+            }
         }
     }
 }

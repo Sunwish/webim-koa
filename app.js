@@ -14,15 +14,17 @@ const apiHandler = require('./apiHandler/apiHandler');
 
 const config = require('./config.json')
 const app = new Koa(); // 创建 Koa 服务
-dao.connect(app, 'mongodb://' + config.database.mongodb.host + ':' + config.database.mongodb.port + '/' + config.database.mongodb.collection)
+
+dao.connect(app, 'mongodb://' + config[config.mode].database.mongodb.host + ':' + config[config.mode].database.mongodb.port + '/' + config[config.mode].database.mongodb.collection)
 .then(() => {
     console.log('Connect to mongodb successed.');
+    dbTest(); // db test
 
     configurateApp(app); // configurate middleware inside here
     apiHandler.handleApi(router);
 
-    app.listen(12345, () => {
-        console.log('Koa listening on port 5000.');
+    app.listen(config.debug.koa.port, () => {
+        console.log('Koa listening on port ' + config.debug.koa.port + '.');
     })
 
 })
@@ -40,4 +42,9 @@ function configurateApp(app) {
     
     // 配置静态资源目录
     // app.use(static('./'))
+}
+
+async function dbTest() {
+    //[err, res] = await dao.isUserNameExist('Sunwish0');
+    //console.log(err, res);
 }
