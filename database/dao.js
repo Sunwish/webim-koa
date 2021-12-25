@@ -54,3 +54,21 @@ function isEmailExist (email) {
     }).then(result => [null, result])
     .catch(err => [err]);
 }
+
+exports.getUserByUsername =
+function getUserByUsername (username) {
+    return models.userModel.findOne({
+        username: username
+    }).exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
+
+exports.getUserByEmail =
+function getUserByEmail (email) {
+    return models.userModel.findOne({
+        email: email
+    }).exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}

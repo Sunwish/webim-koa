@@ -65,7 +65,36 @@ function handleApi (router) {
     })
     router.post('/login/login', async ctx => {
         var body = ctx.request.body;
-
+        var err, res, errMessage;
+        if(+body.loginType == 0) {
+            [err, res] = await dao.getUserByUsername(body.account);
+        }
+        else if(+body.loginType == 1) {
+            [err, res] = await dao.getUserByEmail(body.account);
+        }
+        if(err != null){
+            ctx.body = {
+                'errMessage': err
+            }
+            return;
+        }
+        else if(res == null){
+            ctx.body = {
+                'errMessage': 'Account [' + body.account + '] does not exist.'
+            }
+            return;
+        }
+        else {
+            if(res.password != body.password) {
+                ctx.body = {
+                    'errMessage': 'Incorrect password.'
+                }
+            } else {
+                ctx.body = {
+                    'result': res
+                }
+            }
+        }
     })
     /* // 测试一下
     router.get('/', async cxt => {
