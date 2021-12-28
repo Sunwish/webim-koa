@@ -1,7 +1,8 @@
 /////////////////////////////////////////////////////////////
 // require models
 const Koa = require('koa');
-const static = require ('koa-static'); // 静态路由模块
+const cors = require('koa2-cors'); // 跨域处理模块
+// const static = require ('koa-static'); // 静态路由模块
 const router = new require('koa-router')(); // 路由模块
 const bodyparser = require('koa-bodyparser'); // POST 解析模块
 const path = require('path'); // 路径模块
@@ -34,6 +35,9 @@ dao.connect(app, 'mongodb://' + config[config.mode].database.mongodb.host + ':' 
 })
 
 function configurateApp(app) {
+    // 配置跨域
+    app.use(cors());
+    
     // 使用 POST 解析
     app.use(bodyparser());
     
