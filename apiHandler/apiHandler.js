@@ -96,7 +96,7 @@ function handleApi (router) {
             }
         }
     })
-    /* // 测试一下
+    // 测试一下
     router.get('/', async cxt => {
         cxt.body = 'Hello Web IM Api!';
     })
@@ -111,5 +111,5 @@ function handleApi (router) {
     // POST body
     router.post('/test', async ctx => {
         ctx.body = ctx.request.body;
-    }) */
+    })
 }
