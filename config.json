@@ -1,5 +1,6 @@
 {
     "mode": "debug",
+    "jwtSecret": "007x365",
     "debug": {
         "koa": {
             "port": "12345"

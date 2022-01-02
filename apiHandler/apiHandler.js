@@ -1,4 +1,7 @@
+var jwt = require('jsonwebtoken');
 const dao = require('../database/dao');
+
+const jwtSecret = require('../config.json').jwtSecret;
 
 exports.handleApi = 
 function handleApi (router) {
@@ -90,8 +93,13 @@ function handleApi (router) {
                     'errMessage': 'Incorrect password.'
                 }
             } else {
+                // Login success
+                const token = jwt.sign(res.toJSON(), jwtSecret, {
+                    expiresIn: 60 * 60 * 24 // 24 hours
+                })
                 ctx.body = {
-                    'result': res
+                    'result': res,
+                    'token': token
                 }
             }
         }
