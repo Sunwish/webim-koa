@@ -60,7 +60,7 @@ function configurateApp(app) {
         secret: config.jwtSecret
     }).unless({
         // 登录接口和测试接口不做 token 验证
-    path: [/\/login\/login/, /\/test/, '/']
+        path: [/\/login\/register/, /\/login\/login/, /\/test/, '/']
     }))
 
     // 配置路由

@@ -61,7 +61,7 @@ function handleApi (router) {
             'avatar': body.avater
         });
         ctx.body = {
-            'errCode': err == null ? 100 : null,
+            'errCode': err != null ? 100 : null,
             'errMessage': err,
             'result': res
         }
@@ -84,7 +84,7 @@ function handleApi (router) {
         }
         if(err != null){
             ctx.body = {
-                'errCode': err == null ? 100 : null,
+                'errCode': err != null ? 100 : null,
                 'errMessage': err
             }
             return;
