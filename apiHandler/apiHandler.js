@@ -10,12 +10,14 @@ function handleApi (router) {
         // Check infomation integrity
         if(body.username == null || body.username == ''){
             ctx.body = {
+                'errCode': 101,
                 'errMessage': 'Username connot be empty.'
             };
             return;
         }
         if(body.email == null || body.email == ''){
             ctx.body = {
+                'errCode': 102,
                 'errMessage': 'Email connot be empty.'
             };
             return;
@@ -24,12 +26,14 @@ function handleApi (router) {
         [err, res] = await dao.isUserNameExist(body.username);
         if(err){
             ctx.body = {
+                'errCode': 100,
                 'errMessage': err
             };
             return;
         }
         if(res == true){
             ctx.body = {
+                'errCode': 103,
                 'errMessage': 'Username [' + body.username + '] already exists!'
             };
             return;
@@ -37,12 +41,14 @@ function handleApi (router) {
         [err, res] = await dao.isEmailExist(body.email)
         if(err){
             ctx.body = {
+                'errCode': 100,
                 'errMessage': err
             };
             return;
         }
         if(res == true){
             ctx.body = {
+                'errCode': 104,
                 'errMessage': 'Email [' + body.email + '] already exists!'
             };
             return;
@@ -55,6 +61,7 @@ function handleApi (router) {
             'avatar': body.avater
         });
         ctx.body = {
+            'errCode': err == null ? 100 : null,
             'errMessage': err,
             'result': res
         }
@@ -77,12 +84,14 @@ function handleApi (router) {
         }
         if(err != null){
             ctx.body = {
+                'errCode': err == null ? 100 : null,
                 'errMessage': err
             }
             return;
         }
         else if(res == null){
             ctx.body = {
+                'errCode': 201,
                 'errMessage': 'Account [' + body.account + '] does not exist.'
             }
             return;
@@ -90,6 +99,7 @@ function handleApi (router) {
         else {
             if(res.password != body.password) {
                 ctx.body = {
+                    'errCode': 202,
                     'errMessage': 'Incorrect password.'
                 }
             } else {
