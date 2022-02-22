@@ -2,7 +2,8 @@
 // require models
 const Koa = require('koa');
 const cors = require('koa2-cors'); // 跨域处理模块
-// const static = require ('koa-static'); // 静态路由模块
+const static = require ('koa-static'); // 静态路由模块
+const koaBody = require('koa-body'); // koa body 接受格式配置模块
 const router = new require('koa-router')(); // 路由模块
 const bodyparser = require('koa-bodyparser'); // POST 解析模块
 const path = require('path'); // 路径模块
@@ -16,6 +17,7 @@ const apiHandler = require('./apiHandler/apiHandler');
 
 const config = require('./config.json');
 const { nextTick } = require('process');
+const { randomInt } = require('crypto');
 const app = new Koa(); // 创建 Koa 服务
 
 dao.connect(app, 'mongodb://' + config[config.mode].database.mongodb.host + ':' + config[config.mode].database.mongodb.port + '/' + config[config.mode].database.mongodb.collection)
@@ -60,8 +62,18 @@ function configurateApp(app) {
         secret: config.jwtSecret
     }).unless({
         // 登录接口和测试接口不做 token 验证
-        path: [/\/login\/register/, /\/login\/login/, /\/test/, '/']
+        path: [/\/login\/register/, /\/login\/login/, /\/test/, /\/upload/, '/']
     }))
+
+    // 配置上传中间件
+    app.use(static(path.join(__dirname, 'public')));
+
+    // 配置 body 体格式
+    app.use(koaBody({
+        multipart: true,
+        uploadDir: path.join(__dirname, 'uploads'),
+        maxFileSize: 200 * 1024 * 1024
+    }));
 
     // 配置路由
     app.use(router.routes()).use(router.allowedMethods());

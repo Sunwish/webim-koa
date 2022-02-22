@@ -1,5 +1,6 @@
 var jwt = require('jsonwebtoken');
 const dao = require('../database/dao');
+const path = require('path'); // 路径模块
 
 const jwtSecret = require('../config.json').jwtSecret;
 
@@ -113,6 +114,37 @@ function handleApi (router) {
                 }
             }
         }
+    })
+    router.post('/upload', async ctx => {
+        const avatat = ctx.request.files.file;
+        if(!avatat || !avatat.path || !avatat.name) {
+            ctx.body = 'param error';
+            return;
+        }
+
+        const fs = require('fs');
+        // 创建读取流
+        const reader = fs.createReadStream(avatat.path);
+        const fileName = avatat.name;
+        const filePath = path.join(__dirname, '../public/uploads/') + fileName;
+
+        // 创建写入流
+        const upStream = fs.createWriteStream(filePath);
+        upStream.on('error', () => {
+            console.log('server file path error');
+            return;
+        });
+
+        // 从读取流通过管道写进写入流
+        await new Promise((resolve, reject) => {
+            reader.pipe(upStream).on('finish', () => {
+                ctx.body = {'url' : ctx.origin + '/uploads/' + fileName};
+                resolve();
+            }).on('error', (err) => {
+                console.log('pipe file error');
+                reject(err)
+            });
+        });
     })
     // 测试一下
     router.get('/', async cxt => {
