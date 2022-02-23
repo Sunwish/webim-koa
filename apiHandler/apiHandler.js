@@ -1,8 +1,10 @@
 var jwt = require('jsonwebtoken');
 const dao = require('../database/dao');
 const path = require('path'); // 路径模块
+const fs = require('fs');
 
 const jwtSecret = require('../config.json').jwtSecret;
+const avaterDir = path.join(__dirname, '../public/uploads/avaters/');
 
 exports.handleApi = 
 function handleApi (router) {
@@ -121,7 +123,7 @@ function handleApi (router) {
         if(userInfo == null) {
             console.log('authorization invalid');
             ctx.body = {
-                'errCode': '301',
+                'errCode': 301,
                 'errMessage': 'authorization invalid',
             };
             return;
@@ -131,23 +133,22 @@ function handleApi (router) {
         if(!ctx.request.files || !ctx.request.files.file || !ctx.request.files.file.path || !ctx.request.files.file.name) {
             console.log('param error');
             ctx.body = {
-                'errCode': '302',
+                'errCode': 302,
                 'errMessage': 'param error',
             };
             return;
         }
         const file = ctx.request.files.file;
-        const fs = require('fs');
         // 创建读取流
         const reader = fs.createReadStream(file.path);
         const fileName = userInfo._id + '-' + Date.now() + '.jpg';
-        const filePath = path.join(__dirname, '../public/uploads/avaters/') + fileName;
+        const filePath = avaterDir + fileName;
         // 创建写入流
         const upStream = fs.createWriteStream(filePath);
         upStream.on('error', () => {
             console.log('server file path error');
             ctx.body = {
-                'errCode': '100',
+                'errCode': 100,
                 'errMessage': 'server file path error',
             };
             return;
@@ -167,7 +168,7 @@ function handleApi (router) {
             }).on('error', (err) => {
                 console.log('pipe file error');
                 ctx.body = {
-                    'errCode': '100',
+                    'errCode': 100,
                     'errMessage': 'pipe file error',
                 };
                 reject(err)
@@ -180,14 +181,24 @@ function handleApi (router) {
         if(userInfo == null) {
             console.log('authorization invalid');
             ctx.body = {
-                'errCode': '301',
+                'errCode': 301,
                 'errMessage': 'authorization invalid',
             };
             return;
         }
-        // 修改头像
+
+        // 验证指定头像文件是否存在
         var body = ctx.request.body;
-        [err, res] = await dao.updateUserAvater(userInfo._id, body.avater);
+        if(!fs.existsSync(avaterDir + body.avatar)) {
+            ctx.body = {
+                'errCode': 303,
+                'errMessage': 'Avatar file [' + body.avatar + '] is not found.'
+            }
+            return;
+        }
+
+        // 修改头像
+        [err, res] = await dao.updateUserAvater(userInfo._id, body.avatar);
 
         if(err != null){
             ctx.body = {
