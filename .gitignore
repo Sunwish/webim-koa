@@ -1,8 +1,8 @@
 .DS_Store
 node_modules
 /dist
-/public/uploads/avaters/*
-!/public/uploads/avaters/blank-avater.png
+/public/uploads/avatars/*
+!/public/uploads/avatars/blank-avatar.png
 
 # local env files
 .env.local

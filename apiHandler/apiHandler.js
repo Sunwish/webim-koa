@@ -4,7 +4,7 @@ const path = require('path'); // 路径模块
 const fs = require('fs');
 
 const jwtSecret = require('../config.json').jwtSecret;
-const avaterDir = path.join(__dirname, '../public/uploads/avaters/');
+const avatarDir = path.join(__dirname, '../public/uploads/avatars/');
 
 exports.handleApi = 
 function handleApi (router) {
@@ -61,7 +61,7 @@ function handleApi (router) {
             'username': body.username,
             'password': body.password,
             'email': body.email,
-            'avatar': 'blank-avater.png'
+            'avatar': 'blank-avatar.png'
         });
         ctx.body = {
             'errCode': err != null ? 100 : null,
@@ -117,7 +117,7 @@ function handleApi (router) {
             }
         }
     })
-    router.post('/upload/avater', async ctx => {
+    router.post('/upload/avatar', async ctx => {
         // 身份认证
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
@@ -142,7 +142,7 @@ function handleApi (router) {
         // 创建读取流
         const reader = fs.createReadStream(file.path);
         const fileName = userInfo._id + '-' + Date.now() + '.jpg';
-        const filePath = avaterDir + fileName;
+        const filePath = avatarDir + fileName;
         // 创建写入流
         const upStream = fs.createWriteStream(filePath);
         upStream.on('error', () => {
@@ -160,8 +160,8 @@ function handleApi (router) {
                 console.log('pipe file finish');
                 ctx.body = {
                     'res' : {
-                        'url' : ctx.origin + '/uploads/avaters/' + fileName, 
-                        'avaterName': fileName
+                        'url' : ctx.origin + '/uploads/avatars/' + fileName, 
+                        'avatarName': fileName
                     }
                 };
                 resolve();
@@ -175,7 +175,7 @@ function handleApi (router) {
             });
         });
     })
-    router.post('/update/avater', async ctx => {
+    router.post('/update/avatar', async ctx => {
         // 获取身份信息
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
@@ -189,7 +189,7 @@ function handleApi (router) {
 
         // 验证指定头像文件是否存在
         var body = ctx.request.body;
-        if(!fs.existsSync(avaterDir + body.avatar)) {
+        if(!fs.existsSync(avatarDir + body.avatar)) {
             ctx.body = {
                 'errCode': 303,
                 'errMessage': 'Avatar file [' + body.avatar + '] is not found.'
@@ -198,7 +198,7 @@ function handleApi (router) {
         }
 
         // 修改头像
-        [err, res] = await dao.updateUserAvater(userInfo._id, body.avatar);
+        [err, res] = await dao.updateUserAvatar(userInfo._id, body.avatar);
 
         if(err != null){
             ctx.body = {

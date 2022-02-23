@@ -80,12 +80,12 @@ function getUserById (_id) {
     .catch(err => [err]);
 }
 
-exports.updateUserAvater =
-function updateUserAvater (_id, avater) {
+exports.updateUserAvatar =
+function updateUserAvatar (_id, avatar) {
     return models.userModel.updateOne({
         _id: _id
     }, {
-        avatar: avater
+        avatar: avatar
     }).exec()
     .then(res => [null, res])
     .catch(err => [err]);
