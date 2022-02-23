@@ -16,7 +16,9 @@ const apiHandler = require('./apiHandler/apiHandler');
 /////////////////////////////////////////////////////////////
 
 const config = require('./config.json');
-const app = new Koa(); // 创建 Koa 服务
+const app = new Koa({
+    proxy: true
+}); // 创建 Koa 服务
 
 dao.connect(app, 'mongodb://' + config[config.mode].database.mongodb.host + ':' + config[config.mode].database.mongodb.port + '/' + config[config.mode].database.mongodb.collection)
 .then(() => {

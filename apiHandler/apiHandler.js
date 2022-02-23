@@ -3,7 +3,8 @@ const dao = require('../database/dao');
 const path = require('path'); // 路径模块
 const fs = require('fs');
 
-const jwtSecret = require('../config.json').jwtSecret;
+const config = require('../config.json');
+const jwtSecret = config.jwtSecret;
 const avatarDir = path.join(__dirname, '../public/uploads/avatars/');
 
 exports.handleApi = 
@@ -160,7 +161,7 @@ function handleApi (router) {
                 console.log('pipe file finish');
                 ctx.body = {
                     'res' : {
-                        'url' : ctx.origin + '/uploads/avatars/' + fileName, 
+                        'url' : ctx.request.header.host + '/uploads/avatars/' + fileName, 
                         'avatarName': fileName
                     }
                 };
