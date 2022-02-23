@@ -116,18 +116,17 @@ function handleApi (router) {
         }
     })
     router.post('/upload', async ctx => {
-        const avatat = ctx.request.files.file;
-        if(!avatat || !avatat.path || !avatat.name) {
+        if(!ctx.request.files || !ctx.request.files.file || !ctx.request.files.file.path || !ctx.request.files.file.name) {
+            console.log('param error');
             ctx.body = 'param error';
             return;
         }
-
+        const file = ctx.request.files.file;
         const fs = require('fs');
         // 创建读取流
-        const reader = fs.createReadStream(avatat.path);
-        const fileName = avatat.name;
+        const reader = fs.createReadStream(file.path);
+        const fileName = file.name;
         const filePath = path.join(__dirname, '../public/uploads/') + fileName;
-
         // 创建写入流
         const upStream = fs.createWriteStream(filePath);
         upStream.on('error', () => {
@@ -138,6 +137,7 @@ function handleApi (router) {
         // 从读取流通过管道写进写入流
         await new Promise((resolve, reject) => {
             reader.pipe(upStream).on('finish', () => {
+                console.log('pipe file finish');
                 ctx.body = {'url' : ctx.origin + '/uploads/' + fileName};
                 resolve();
             }).on('error', (err) => {

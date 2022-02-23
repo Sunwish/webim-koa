@@ -16,8 +16,6 @@ const apiHandler = require('./apiHandler/apiHandler');
 /////////////////////////////////////////////////////////////
 
 const config = require('./config.json');
-const { nextTick } = require('process');
-const { randomInt } = require('crypto');
 const app = new Koa(); // 创建 Koa 服务
 
 dao.connect(app, 'mongodb://' + config[config.mode].database.mongodb.host + ':' + config[config.mode].database.mongodb.port + '/' + config[config.mode].database.mongodb.collection)
@@ -41,10 +39,10 @@ dao.connect(app, 'mongodb://' + config[config.mode].database.mongodb.host + ':' 
 function configurateApp(app) {
     // 配置跨域
     app.use(cors());
-    
+    /*
     // 使用 POST 解析
     app.use(bodyparser());
-    
+    */
     // 错误处理
     app.use((ctx, next) => {
         return next().catch(err => {
