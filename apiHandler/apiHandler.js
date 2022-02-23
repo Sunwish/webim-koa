@@ -59,7 +59,7 @@ function handleApi (router) {
             'username': body.username,
             'password': body.password,
             'email': body.email,
-            'avatar': body.avater
+            'avatar': 'blank-avater.png'
         });
         ctx.body = {
             'errCode': err != null ? 100 : null,
@@ -126,7 +126,7 @@ function handleApi (router) {
         // 创建读取流
         const reader = fs.createReadStream(file.path);
         const fileName = file.name;
-        const filePath = path.join(__dirname, '../public/uploads/') + fileName;
+        const filePath = path.join(__dirname, '../public/uploads/avaters/') + fileName;
         // 创建写入流
         const upStream = fs.createWriteStream(filePath);
         upStream.on('error', () => {
