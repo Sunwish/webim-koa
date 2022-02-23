@@ -115,7 +115,16 @@ function handleApi (router) {
             }
         }
     })
-    router.post('/upload', async ctx => {
+    router.post('/upload/avater', async ctx => {
+        // 身份认证
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        if(userInfo == null) {
+            console.log('authorization invalid');
+            ctx.body = 'authorization invalid';
+            return;
+        }
+
+        // 上传图像参数验证
         if(!ctx.request.files || !ctx.request.files.file || !ctx.request.files.file.path || !ctx.request.files.file.name) {
             console.log('param error');
             ctx.body = 'param error';
@@ -125,7 +134,7 @@ function handleApi (router) {
         const fs = require('fs');
         // 创建读取流
         const reader = fs.createReadStream(file.path);
-        const fileName = file.name;
+        const fileName = userInfo._id + '-' + Date.now() + '.jpg';
         const filePath = path.join(__dirname, '../public/uploads/avaters/') + fileName;
         // 创建写入流
         const upStream = fs.createWriteStream(filePath);
@@ -138,13 +147,40 @@ function handleApi (router) {
         await new Promise((resolve, reject) => {
             reader.pipe(upStream).on('finish', () => {
                 console.log('pipe file finish');
-                ctx.body = {'url' : ctx.origin + '/uploads/' + fileName};
+                ctx.body = {
+                    'url' : ctx.origin + '/uploads/avaters/' + fileName, 
+                    'avaterName': fileName
+                };
                 resolve();
             }).on('error', (err) => {
                 console.log('pipe file error');
                 reject(err)
             });
         });
+    })
+    router.post('/update/avater', async ctx => {
+        // 获取身份信息
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        if(userInfo == null) {
+            console.log('authorization invalid');
+            ctx.body = 'authorization invalid';
+            return;
+        }
+        // 修改头像
+        var body = ctx.request.body;
+        [err, res] = await dao.updateUserAvater(userInfo._id, body.avater);
+
+        if(err != null){
+            ctx.body = {
+                'errCode': err != null ? 100 : null,
+                'errMessage': err
+            }
+            return;
+        }
+        ctx.body = {
+            'result': res
+        };
+
     })
     // 测试一下
     router.get('/', async cxt => {

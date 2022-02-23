@@ -72,3 +72,21 @@ function getUserByEmail (email) {
     .then(res => [null, res])
     .catch(err => [err]);
 }
+
+exports.getUserById =
+function getUserById (_id) {
+    return models.userModel.findById(_id).exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
+
+exports.updateUserAvater =
+function updateUserAvater (_id, avater) {
+    return models.userModel.updateOne({
+        _id: _id
+    }, {
+        avatar: avater
+    }).exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
