@@ -120,14 +120,20 @@ function handleApi (router) {
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
             console.log('authorization invalid');
-            ctx.body = 'authorization invalid';
+            ctx.body = {
+                'errCode': '301',
+                'errMessage': 'authorization invalid',
+            };
             return;
         }
 
         // 上传图像参数验证
         if(!ctx.request.files || !ctx.request.files.file || !ctx.request.files.file.path || !ctx.request.files.file.name) {
             console.log('param error');
-            ctx.body = 'param error';
+            ctx.body = {
+                'errCode': '302',
+                'errMessage': 'param error',
+            };
             return;
         }
         const file = ctx.request.files.file;
@@ -140,6 +146,10 @@ function handleApi (router) {
         const upStream = fs.createWriteStream(filePath);
         upStream.on('error', () => {
             console.log('server file path error');
+            ctx.body = {
+                'errCode': '100',
+                'errMessage': 'server file path error',
+            };
             return;
         });
 
@@ -148,12 +158,18 @@ function handleApi (router) {
             reader.pipe(upStream).on('finish', () => {
                 console.log('pipe file finish');
                 ctx.body = {
-                    'url' : ctx.origin + '/uploads/avaters/' + fileName, 
-                    'avaterName': fileName
+                    'res' : {
+                        'url' : ctx.origin + '/uploads/avaters/' + fileName, 
+                        'avaterName': fileName
+                    }
                 };
                 resolve();
             }).on('error', (err) => {
                 console.log('pipe file error');
+                ctx.body = {
+                    'errCode': '100',
+                    'errMessage': 'pipe file error',
+                };
                 reject(err)
             });
         });
@@ -163,7 +179,10 @@ function handleApi (router) {
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
             console.log('authorization invalid');
-            ctx.body = 'authorization invalid';
+            ctx.body = {
+                'errCode': '301',
+                'errMessage': 'authorization invalid',
+            };
             return;
         }
         // 修改头像
