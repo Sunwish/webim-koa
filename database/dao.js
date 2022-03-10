@@ -90,3 +90,18 @@ function updateUserAvatar (_id, avatar) {
     .then(res => [null, res])
     .catch(err => [err]);
 }
+
+exports.updateUserInfo = 
+function updateUserInfo (_id, userInfo) {
+    var user = models.userModel.findById(_id);
+    return models.userModel.updateOne({
+        _id: _id
+    }, {
+        imgUrl: !userInfo.imgUrl ? user.imgUrl : userInfo.imgUrl,
+        nickname: !userInfo.nickname ? user.nickname : userInfo.nickname,
+        houseplace: !userInfo.houseplace ? user.houseplace : userInfo.houseplace,
+        birthday: !userInfo.birthday ? user.birthday : userInfo.birthday,
+    }).exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
