@@ -111,6 +111,7 @@ function handleApi (router) {
                 const token = jwt.sign(res.toJSON(), jwtSecret, {
                     expiresIn: 60 * 60 * 24 // 24 hours
                 })
+                res.password = undefined;
                 ctx.body = {
                     'result': res,
                     'token': token
