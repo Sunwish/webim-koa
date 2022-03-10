@@ -6,7 +6,11 @@ const userSchema = mongo.Schema({
     username: String,
     password: String,
     email: String,
-    avatar: String
+    avatar: String,
+    nickname: String,
+    houseplace: String,
+    birthday: Object,
+    imgUrl: String
 });
 
 //////////////////////////////////////// MODEL
