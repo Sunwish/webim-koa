@@ -58,11 +58,13 @@ function handleApi (router) {
             return;
         }
         // Add user
+        var defulatAvarar = 'blank-avatar.png';
         [err, res] = await dao.addUser({
             'username': body.username,
             'password': body.password,
             'email': body.email,
-            'avatar': 'blank-avatar.png'
+            'avatar': defulatAvarar,
+            'imgUrl': ctx.request.header.host + '/uploads/avatars/' + defulatAvarar
         });
         ctx.body = {
             'errCode': err != null ? 100 : null,
@@ -200,7 +202,7 @@ function handleApi (router) {
         }
 
         // 修改头像
-        [err, res] = await dao.updateUserAvatar(userInfo._id, body.avatar);
+        [err, res] = await dao.updateUserAvatar(userInfo._id, body.avatar, ctx.request.header.host + '/uploads/avatars/' + body.avatar);
 
         if(err != null){
             ctx.body = {

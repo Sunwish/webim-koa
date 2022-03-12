@@ -26,7 +26,8 @@ function addUser (user) {
         'username': user.username,
         'password': user.password,
         'email': user.email,
-        'avatar': avatar
+        'avatar': avatar,
+        'imgUrl': user.imgUrl
     }).save()
     .then(res => [null, res])
     .catch(err => [err]);
@@ -81,11 +82,12 @@ function getUserById (_id) {
 }
 
 exports.updateUserAvatar =
-function updateUserAvatar (_id, avatar) {
+function updateUserAvatar (_id, avatarName, imgUrl) {
     return models.userModel.updateOne({
         _id: _id
     }, {
-        avatar: avatar
+        avatar: avatarName,
+        imgUrl: imgUrl
     }).exec()
     .then(res => [null, res])
     .catch(err => [err]);
