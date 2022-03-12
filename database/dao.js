@@ -20,15 +20,8 @@ function connect (app, connectString) {
 exports.addUser = 
 function addUser (user) {
     const randamAvatar =  'https://api.prodless.com/avatar.png';
-    var avatar = randamAvatar;
-    if(user.avatar && user.avatar != '') { avatar = user.avatar; }
-    return new models.userModel({
-        'username': user.username,
-        'password': user.password,
-        'email': user.email,
-        'avatar': avatar,
-        'imgUrl': user.imgUrl
-    }).save()
+    if(!(user.avatar && user.avatar != '')) { user.avatar = randamAvatar; }
+    return new models.userModel(user).save()
     .then(res => [null, res])
     .catch(err => [err]);
 }
