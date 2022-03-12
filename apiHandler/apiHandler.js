@@ -214,7 +214,7 @@ function handleApi (router) {
         };
 
     })
-    router.get('/api/getAcc', async ctx => {
+    router.get('/getAcc', async ctx => {
         // 获取身份信息
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
@@ -225,12 +225,27 @@ function handleApi (router) {
             };
             return;
         }
-        userInfo.password = undefined;
+        [err, res] = await dao.getUserById(userInfo._id);
+        if(err != null){
+            ctx.body = {
+                'errCode': err != null ? 100 : null,
+                'errMessage': err
+            }
+            return;
+        }
+        else if(res == null){
+            ctx.body = {
+                'errCode': 201,
+                'errMessage': 'Account [' + body.account + '] does not exist.'
+            }
+            return;
+        }
+        res.password = undefined;
         ctx.body = {
-            'result': userInfo
+            'result': res
         }
     })
-    router.post('/api/changeAccInform', async ctx => {
+    router.post('/changeAccInform', async ctx => {
         // 获取身份信息
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
