@@ -161,14 +161,28 @@ function handleApi (router) {
 
         // 从读取流通过管道写进写入流
         await new Promise((resolve, reject) => {
-            reader.pipe(upStream).on('finish', () => {
+            reader.pipe(upStream).on('finish', async () => {
                 console.log('pipe file finish');
-                ctx.body = {
-                    'res' : {
-                        'url' : ctx.request.header.host + '/uploads/avatars/' + fileName, 
-                        'avatarName': fileName
+
+                // 更新头像
+                [err, res] = await dao.updateUserAvatar(userInfo._id, fileName, ctx.request.header.host + '/uploads/avatars/' + fileName);
+                if(err != null){
+                    ctx.body = {
+                        'errCode': 304,
+                        'errMessage': err,
+                        'result': {
+                            'avatar': fileName,
+                            'imgUrl': ctx.request.header.host + '/uploads/avatars/' + fileName
+                        }
                     }
-                };
+                } else {
+                    ctx.body = {
+                        'result' : {
+                            'avatar': fileName,
+                            'imgUrl' : ctx.request.header.host + '/uploads/avatars/' + fileName
+                        }
+                    };
+                }
                 resolve();
             }).on('error', (err) => {
                 console.log('pipe file error');
