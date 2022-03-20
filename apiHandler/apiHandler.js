@@ -213,7 +213,10 @@ function handleApi (router) {
             return;
         }
         ctx.body = {
-            'result': res
+            'result': {
+                avatar: res.avatar,
+                imgUrl: res.imgUrl
+            }
         };
 
     })
@@ -269,6 +272,8 @@ function handleApi (router) {
             }
             return;
         }
+
+        res.password = undefined;
         ctx.body = {
             'result': res
         };

@@ -76,11 +76,11 @@ function getUserById (_id) {
 
 exports.updateUserAvatar =
 function updateUserAvatar (_id, avatarName, imgUrl) {
-    return models.userModel.updateOne({
-        _id: _id
-    }, {
+    return models.userModel.findByIdAndUpdate(_id, {
         avatar: avatarName,
         imgUrl: imgUrl
+    }, {
+        new: true
     }).exec()
     .then(res => [null, res])
     .catch(err => [err]);
@@ -89,13 +89,13 @@ function updateUserAvatar (_id, avatarName, imgUrl) {
 exports.updateUserInfo = 
 function updateUserInfo (_id, userInfo) {
     var user = models.userModel.findById(_id);
-    return models.userModel.updateOne({
-        _id: _id
-    }, {
+    return models.userModel.findByIdAndUpdate(_id, {
         imgUrl: !userInfo.imgUrl ? user.imgUrl : userInfo.imgUrl,
         nickname: !userInfo.nickname ? user.nickname : userInfo.nickname,
         houseplace: !userInfo.houseplace ? user.houseplace : userInfo.houseplace,
         birthday: !userInfo.birthday ? user.birthday : userInfo.birthday,
+    }, {
+        new: true
     }).exec()
     .then(res => [null, res])
     .catch(err => [err]);
