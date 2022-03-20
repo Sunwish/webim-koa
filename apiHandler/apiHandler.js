@@ -64,7 +64,8 @@ function handleApi (router) {
             'password': body.password,
             'email': body.email,
             'avatar': defulatAvarar,
-            'imgUrl': ctx.request.header.host + '/uploads/avatars/' + defulatAvarar
+            'imgUrl': ctx.request.header.host + '/uploads/avatars/' + defulatAvarar,
+            'nickname': body.username
         });
         ctx.body = {
             'errCode': err != null ? 100 : null,
