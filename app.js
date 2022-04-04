@@ -13,12 +13,24 @@ const koajwt = require('koa-jwt'); // koa-jwt 验证中间件
 // require components
 const dao = require('./database/dao');
 const apiHandler = require('./apiHandler/apiHandler');
+const socketHandler = require('./socketHandler/socketHandler');
 /////////////////////////////////////////////////////////////
 
 const config = require('./config.json');
 const app = new Koa({
     proxy: true
 }); // 创建 Koa 服务
+
+/////////////////////////////////////////////////////////////
+
+const server = require('http').createServer(app.callback());
+const io = require('socket.io')(server, {
+    cors: {
+        origin: '*'
+    }
+}); // 创建 socket.io 服务
+
+/////////////////////////////////////////////////////////////
 
 dao.connect(app, 'mongodb://' + config[config.mode].database.mongodb.host + ':' + config[config.mode].database.mongodb.port + '/' + config[config.mode].database.mongodb.collection)
 .then(() => {
@@ -27,8 +39,9 @@ dao.connect(app, 'mongodb://' + config[config.mode].database.mongodb.host + ':' 
 
     configurateApp(app); // configurate middleware inside here
     apiHandler.handleApi(router);
+    socketHandler.handleSocket(io);
 
-    app.listen(config.debug.koa.port, () => {
+    server.listen(config.debug.koa.port, () => {
         console.log('Koa listening on port ' + config.debug.koa.port + '.');
     })
 
