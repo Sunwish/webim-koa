@@ -13,7 +13,21 @@ const userSchema = mongo.Schema({
     imgUrl: String
 });
 
+const friendSchema = mongo.Schema({
+    userId: {
+        type: mongo.Schema.Types.ObjectId,
+        ref: 'users'
+    },
+    friends: [{
+        type: mongo.Schema.Types.ObjectId,
+        ref: 'users'
+    }]
+})
+
 //////////////////////////////////////// MODEL
 
 var userModel = mongo.model('users', userSchema);
 exports.userModel = userModel;
+
+var friendModel = mongo.model('friends', friendSchema);
+exports.friendModel = friendModel;
