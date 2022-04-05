@@ -165,10 +165,26 @@ function getFriends (_id) {
     .catch(err => [err]);
 }
 
+exports.isFriend =
+async function isFriend (_id, targetId) {
+    // Check id valid
+    if (!mongo.Types.ObjectId.isValid(_id) || !mongo.Types.ObjectId.isValid(targetId)) {
+        return false;
+    }
+    var friend = await models.friendModel.findOne({
+        userId: _id,
+        friends: targetId
+    }).exec();
+    return friend != null;
+}
+
 exports.addFriend =
 async function addFriend (_id, targetId) {
     var id_A = _id;
     var id_B = targetId;
+    if(isFriend(_id, targetId)) {
+        return [null, false];
+    }
 
     // Use transaction for adding 2 freind models
     var session = await models.friendModel.startSession();

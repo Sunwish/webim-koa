@@ -313,6 +313,15 @@ function handleApi (router) {
             }
             return;
         }
+        // 验证是否不是好友
+        if (dao.isFriend(userInfo._id, targetId)) {
+            ctx.body = {
+                'errCode': 503,
+                'errMessage': 'Friend relationship already exists.'
+            }
+            return;
+        }
+
         [err, res] = await dao.addFriend(userInfo._id, targetId)
         if(err != null){
             ctx.body = {
@@ -377,6 +386,10 @@ function handleApi (router) {
         };
     })
 
+    router.get('/test/isFriend', async ctx => {
+        res = await dao.isFriend('61d1631855fb7b32b3d2b38c1', '61c6d5c40c53d1c6969f6587')
+        ctx.body = res;
+    })
     // 测试一下
     router.get('/', async cxt => {
         cxt.body = 'Hello Web IM Api!';
