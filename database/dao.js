@@ -118,6 +118,38 @@ const friendPopulateFields = {
     imgUrl: 1
 };
 
+exports.friendsSearch =
+function friendsSearch (_id, content, fuzzy) {
+    // build regex string.
+    var regexContent = '^' + content + (fuzzy == 'true' ? '' : '$');
+    // get friend
+    return models.friendModel.findOne({
+        userId: _id
+    }).populate({
+        path: 'friends',
+        select: friendPopulateFields,
+        match: {
+            // match from multi fields
+            $or: [{
+                username: {
+                    $regex: regexContent,
+                    $options: 'i'
+                }
+            }, {
+                nickname: {
+                    $regex: regexContent,
+                    $options: 'i'
+                }
+            }]
+        }
+    }).select({
+        _id: 0,
+        friends: 1
+    }).exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
+
 exports.getFriends = 
 function getFriends (_id) {
     return models.friendModel.findOne({

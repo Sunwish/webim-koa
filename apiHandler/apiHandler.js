@@ -351,6 +351,32 @@ function handleApi (router) {
         };
         
     })
+    
+    router.get('/friendsSearch', async ctx => {
+        // 获取身份信息
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        if(userInfo == null) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+
+        [err, res] = await dao.friendsSearch(userInfo._id, ctx.query.content, ctx.query.fuzzy);
+        if(err != null){
+            ctx.body = {
+                'errCode': err != null ? 100 : null,
+                'errMessage': err
+            }
+            return;
+        }
+        ctx.body = {
+            'result': res
+        };
+    })
+
     // 测试一下
     router.get('/', async cxt => {
         cxt.body = 'Hello Web IM Api!';
