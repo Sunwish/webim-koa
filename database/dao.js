@@ -228,3 +228,54 @@ async function addFriend (_id, targetId) {
     session.endSession();
     return [null, true];
 }
+
+exports.deleteFriend =
+async function deleteFriend (_id, targetId) {
+    var id_A = _id;
+    var id_B = targetId;
+    if (!(await isFriend(_id, targetId))) {
+        return [null, false];
+    }
+
+    // Use transaction for delete friend from 2 friend models
+    var session = await models.friendModel.startSession();
+    session.startTransaction();
+    for(var i = 0; i < 2; i++){
+        // i = 0: delete B from A's friends;
+        // i = 1: delete A from B's friends;
+        var friend = await models.friendModel.findOne({
+            userId: id_A
+        }).exec();
+        
+        if (friend) {
+            var index = friend.friends.indexOf(id_B);
+            if (index > -1) {
+                friend.friends.splice(index, 1);
+                [err, res] = await friend.save()
+                .then(res => [null, res])
+                .catch(err => [err])
+                if(err) {
+                    await session.abortTransaction();
+                    session.endSession();
+                    return [err];
+                }
+            } else {
+                // 好友关系一致性错误
+                await session.abortTransaction();
+                session.endSession();
+                return [null, false];
+            }
+        }
+        else {
+            // 好友关系一致性错误
+            await session.abortTransaction();
+            session.endSession();
+            return [null, false];
+        }
+        id_A = targetId;
+        id_B = _id;
+    }
+    await session.commitTransaction();
+    session.endSession();
+    return [null, true];
+}
