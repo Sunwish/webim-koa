@@ -1,5 +1,6 @@
 /////////////////////////////////////////////////////////////
 // require models
+require('log-timestamp'); // 日志时期显示模块
 const Koa = require('koa');
 const cors = require('koa2-cors'); // 跨域处理模块
 const static = require ('koa-static'); // 静态路由模块
