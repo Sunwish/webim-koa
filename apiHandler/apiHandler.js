@@ -58,6 +58,7 @@ function handleApi (router) {
             return;
         }
         // Add user
+        console.log('[apiHandler - POST login/register] Adding new user to db.');
         var defulatAvarar = 'blank-avatar.png';
         [err, res] = await dao.addUser({
             'username': body.username,
@@ -126,7 +127,7 @@ function handleApi (router) {
         // 身份认证
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
-            console.log('authorization invalid');
+            console.log('[apiHandler - POST upload/avatar] Authorization invalid.');
             ctx.body = {
                 'errCode': 301,
                 'errMessage': 'authorization invalid',
@@ -160,9 +161,10 @@ function handleApi (router) {
         });
 
         // 从读取流通过管道写进写入流
+        console.log('[apiHandler - POST upload/avatar] Piping avatar file to server disk.');
         await new Promise((resolve, reject) => {
             reader.pipe(upStream).on('finish', async () => {
-                console.log('pipe file finish');
+                console.log('[apiHandler - POST upload/avatar] Pipe file finish.');
 
                 // 更新头像
                 [err, res] = await dao.updateUserAvatar(userInfo._id, fileName, ctx.request.header.host + '/uploads/avatars/' + fileName);
@@ -185,7 +187,7 @@ function handleApi (router) {
                 }
                 resolve();
             }).on('error', (err) => {
-                console.log('pipe file error');
+                console.log('[apiHandler - POST upload/avatar] Pipe file error.');
                 ctx.body = {
                     'errCode': 100,
                     'errMessage': 'pipe file error',
@@ -198,7 +200,7 @@ function handleApi (router) {
         // 获取身份信息
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
-            console.log('authorization invalid');
+            console.log('[apiHandler - POST update/avatar] Authorization invalid.');
             ctx.body = {
                 'errCode': 301,
                 'errMessage': 'authorization invalid',
@@ -217,6 +219,7 @@ function handleApi (router) {
         }
 
         // 修改头像
+        console.log('[apiHandler - POST update/avatar] Updating user ' + userInfo._id + '\'s avatar');
         [err, res] = await dao.updateUserAvatar(userInfo._id, body.avatar, ctx.request.header.host + '/uploads/avatars/' + body.avatar);
 
         if(err != null){
@@ -238,7 +241,7 @@ function handleApi (router) {
         // 获取身份信息
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
-            console.log('authorization invalid');
+            console.log('[apiHandler - GET getAcc] Authorization invalid.');
             ctx.body = {
                 'errCode': 301,
                 'errMessage': 'authorization invalid',
@@ -269,7 +272,7 @@ function handleApi (router) {
         // 获取身份信息
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
-            console.log('authorization invalid');
+            console.log('[apiHandler - POST changeAccInform] Authorization invalid.');
             ctx.body = {
                 'errCode': 301,
                 'errMessage': 'authorization invalid',
@@ -297,7 +300,7 @@ function handleApi (router) {
         // 获取身份信息
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
-            console.log('authorization invalid');
+            console.log('[apiHandler - POST friend] Authorization invalid.');
             ctx.body = {
                 'errCode': 301,
                 'errMessage': 'authorization invalid',
@@ -339,7 +342,7 @@ function handleApi (router) {
         // 获取身份信息
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
-            console.log('authorization invalid');
+            console.log('[apiHandler - DELETE friend] Authorization invalid.');
             ctx.body = {
                 'errCode': 301,
                 'errMessage': 'authorization invalid',
@@ -382,7 +385,7 @@ function handleApi (router) {
         // 获取身份信息
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
-            console.log('authorization invalid');
+            console.log('[apiHandler - GET friends] Authorization invalid.');
             ctx.body = {
                 'errCode': 301,
                 'errMessage': 'authorization invalid',
@@ -408,7 +411,7 @@ function handleApi (router) {
         // 获取身份信息
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
-            console.log('authorization invalid');
+            console.log('[apiHandler - GET friendsSearach] Authorization invalid.');
             ctx.body = {
                 'errCode': 301,
                 'errMessage': 'authorization invalid',
@@ -428,11 +431,12 @@ function handleApi (router) {
             'result': res
         };
     })
-
+/*
     router.get('/test/isFriend', async ctx => {
         res = await dao.isFriend('61d1631855fb7b32b3d2b38c1', '61c6d5c40c53d1c6969f6587')
         ctx.body = res;
     })
+*/
     // 测试一下
     router.get('/', async cxt => {
         cxt.body = 'Hello Web IM Api!';

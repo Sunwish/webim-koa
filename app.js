@@ -35,7 +35,7 @@ const io = require('socket.io')(server, {
 
 dao.connect(app, 'mongodb://' + config[config.mode].database.mongodb.host + ':' + config[config.mode].database.mongodb.port + '/' + config[config.mode].database.mongodb.collection)
 .then(() => {
-    console.log('Connect to mongodb successed.');
+    console.log('[Server] Connect to mongodb successed.');
     dbTest(); // db test
 
     configurateApp(app); // configurate middleware inside here
@@ -43,12 +43,12 @@ dao.connect(app, 'mongodb://' + config[config.mode].database.mongodb.host + ':' 
     socketHandler.handleSocket(io);
 
     server.listen(config.debug.koa.port, () => {
-        console.log('Koa listening on port ' + config.debug.koa.port + '.');
+        console.log('[Server] Koa listening on port ' + config.debug.koa.port + '.');
     })
 
 })
 .catch(err => {
-    console.error('Fail to connect to mongodb. ');
+    console.error('[Error] [Server] Fail to connect to mongodb. ');
     console.error(err);
 })
 

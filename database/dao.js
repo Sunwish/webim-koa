@@ -189,6 +189,8 @@ async function addFriend (_id, targetId) {
     // Use transaction for adding 2 freind models
     var session = await models.friendModel.startSession();
     session.startTransaction();
+    var sessionUUID = session.id.id.toUUID().toString();
+    console.log('[dao - addFriend] Start add friend transaction ' + sessionUUID + ' for user ' + _id + ' and ' + targetId + '.');
     for(var i = 0; i < 2; i++){
         // i = 0: add B as A's friend;
         // i = 1: add A as B's friend;
@@ -197,7 +199,6 @@ async function addFriend (_id, targetId) {
         }).exec();
         
         if (friend) {
-            console.log('[dao - addFriend] Inserting new friend to user ' + _id);
             friend.friends.push(id_B);
             [err, res] = await friend.save()
             .then(res => [null, res])
@@ -205,11 +206,11 @@ async function addFriend (_id, targetId) {
             if(err) {
                 await session.abortTransaction();
                 session.endSession();
+                console.log('[Error] [dao - addFriend] Add friend transaction '+ sessionUUID +' failed.');
                 return [err];
             }
         }
         else {
-            console.log('[dao - addFriend] Creating new friend model to db');
             [err, res] = await models.friendModel.create({
                 userId: id_A,
                 friends: [id_B]
@@ -218,6 +219,7 @@ async function addFriend (_id, targetId) {
             if(err) {
                 await session.abortTransaction();
                 session.endSession();
+                console.log('[Error] [dao - addFriend] Add friend transaction '+ sessionUUID +' failed.');
                 return [err];
             }
         }
@@ -226,6 +228,7 @@ async function addFriend (_id, targetId) {
     }
     await session.commitTransaction();
     session.endSession();
+    console.log('[dao - addFriend] Add friend transaction '+ sessionUUID +' committed.');
     return [null, true];
 }
 
@@ -240,6 +243,8 @@ async function deleteFriend (_id, targetId) {
     // Use transaction for delete friend from 2 friend models
     var session = await models.friendModel.startSession();
     session.startTransaction();
+    var sessionUUID = session.id.id.toUUID().toString();
+    console.log('[dao - deleteFriend] Start delete friend transaction ' + sessionUUID + ' for user ' + _id + ' and ' + targetId + '.');
     for(var i = 0; i < 2; i++){
         // i = 0: delete B from A's friends;
         // i = 1: delete A from B's friends;
@@ -257,12 +262,15 @@ async function deleteFriend (_id, targetId) {
                 if(err) {
                     await session.abortTransaction();
                     session.endSession();
+                    console.log('[Error] [dao - deleteFriend] Delete friend transaction '+ sessionUUID +' failed.');
                     return [err];
                 }
             } else {
                 // 好友关系一致性错误
                 await session.abortTransaction();
                 session.endSession();
+                console.error('!!![ERROR] [dao - deleteFriend] Consistency error found in friend relationship between user ' + _id + ' and ' + targetId + '.');
+                console.log('[Error] [dao - deleteFriend] Delete friend transaction '+ sessionUUID +' failed.');
                 return [null, false];
             }
         }
@@ -270,6 +278,8 @@ async function deleteFriend (_id, targetId) {
             // 好友关系一致性错误
             await session.abortTransaction();
             session.endSession();
+            console.error('!!![ERROR] [dao - deleteFriend] Consistency error found in friend relationship between user ' + _id + ' and ' + targetId + '.');
+            console.log('[Error] [dao - deleteFriend] Delete friend transaction '+ sessionUUID +' failed.');
             return [null, false];
         }
         id_A = targetId;
@@ -277,5 +287,6 @@ async function deleteFriend (_id, targetId) {
     }
     await session.commitTransaction();
     session.endSession();
+    console.log('[dao - deleteFriend] Delete friend transaction '+ sessionUUID +' committed.');
     return [null, true];
 }
