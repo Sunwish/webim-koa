@@ -33,6 +33,14 @@ function getAllUsers () {
     .catch(err => [err]);
 }
 
+exports.isUserExist =
+async function isUserExist (_id) {
+    if (!mongo.Types.ObjectId.isValid(_id)) return false;
+    else return await models.userModel.exists({
+        _id: _id
+    });
+}
+
 exports.isUserNameExist = 
 function isUserNameExist (username) {
     return models.userModel.exists({
@@ -99,4 +107,51 @@ function updateUserInfo (_id, userInfo) {
     }).exec()
     .then(res => [null, res])
     .catch(err => [err]);
+}
+exports.addFriend =
+async function addFriend (_id, targetId) {
+    var id_A = _id;
+    var id_B = targetId;
+
+    // Use transaction for adding 2 freind models
+    var session = await models.friendModel.startSession();
+    session.startTransaction();
+    for(var i = 0; i < 2; i++){
+        // i = 0: add B as A's friend;
+        // i = 1: add A as B's friend;
+        var friend = await models.friendModel.findOne({
+            userId: id_A
+        }).exec();
+        
+        if (friend) {
+            console.log('[dao - addFriend] Inserting new friend to user ' + _id);
+            friend.friends.push(id_B);
+            [err, res] = await friend.save()
+            .then(res => [null, res])
+            .catch(err => [err])
+            if(err) {
+                await session.abortTransaction();
+                session.endSession();
+                return [err];
+            }
+        }
+        else {
+            console.log('[dao - addFriend] Creating new friend model to db');
+            [err, res] = await models.friendModel.create({
+                userId: id_A,
+                friends: [id_B]
+            }).then(res => [null, res])
+            .catch(err => [err]);
+            if(err) {
+                await session.abortTransaction();
+                session.endSession();
+                return [err];
+            }
+        }
+        id_A = targetId;
+        id_B = _id;
+    }
+    await session.commitTransaction();
+    session.endSession();
+    return [null, true];
 }
