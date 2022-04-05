@@ -165,7 +165,6 @@ function getFriends (_id) {
     .catch(err => [err]);
 }
 
-exports.isFriend =
 async function isFriend (_id, targetId) {
     // Check id valid
     if (!mongo.Types.ObjectId.isValid(_id) || !mongo.Types.ObjectId.isValid(targetId)) {
@@ -177,12 +176,13 @@ async function isFriend (_id, targetId) {
     }).exec();
     return friend != null;
 }
+exports.isFriend = isFriend;
 
 exports.addFriend =
 async function addFriend (_id, targetId) {
     var id_A = _id;
     var id_B = targetId;
-    if(isFriend(_id, targetId)) {
+    if(await isFriend(_id, targetId)) {
         return [null, false];
     }
 

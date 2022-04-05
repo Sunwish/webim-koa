@@ -314,7 +314,7 @@ function handleApi (router) {
             return;
         }
         // 验证是否不是好友
-        if (dao.isFriend(userInfo._id, targetId)) {
+        if (await dao.isFriend(userInfo._id, targetId)) {
             ctx.body = {
                 'errCode': 503,
                 'errMessage': 'Friend relationship already exists.'
