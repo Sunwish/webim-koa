@@ -108,6 +108,31 @@ function updateUserInfo (_id, userInfo) {
     .then(res => [null, res])
     .catch(err => [err]);
 }
+
+/////////////////////////////////////////////////
+const friendPopulateFields = {
+    _id: 1,
+    username: 1,
+    nickname: 1,
+    avatar: 1,
+    imgUrl: 1
+};
+
+exports.getFriends = 
+function getFriends (_id) {
+    return models.friendModel.findOne({
+        userId: _id
+    }).populate({
+        path: 'friends',
+        select: friendPopulateFields,
+    }).select({
+        _id: 0,
+        friends: 1
+    }).exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
+
 exports.addFriend =
 async function addFriend (_id, targetId) {
     var id_A = _id;
