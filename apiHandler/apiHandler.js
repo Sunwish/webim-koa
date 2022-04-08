@@ -435,6 +435,23 @@ function handleApi (router) {
             'result': res
         };
     })
+
+    router.get('/usersSearch', async ctx => {
+        [err, res] = await dao.usersSearch(ctx.query.content, ctx.query.fuzzy);
+        if(err != null){
+            ctx.body = {
+                'errCode': err != null ? 100 : null,
+                'errMessage': err
+            }
+            return;
+        }
+        
+        ctx.body = {
+            'result': {
+                'users': res
+            }
+        };
+    })
 /*
     router.get('/test/isFriend', async ctx => {
         res = await dao.isFriend('61d1631855fb7b32b3d2b38c1', '61c6d5c40c53d1c6969f6587')

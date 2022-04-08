@@ -290,3 +290,26 @@ async function deleteFriend (_id, targetId) {
     console.log('[dao - deleteFriend] Delete friend transaction '+ sessionUUID +' committed.');
     return [null, true];
 }
+
+exports.usersSearch =
+function usersSearch (content, fuzzy) {
+    // build regex string.
+    var regexContent = '^' + content + (fuzzy == 'true' ? '' : '$');
+    // get friend
+    return models.userModel.find({
+        // match from multi fields
+        $or: [{
+            username: {
+                $regex: regexContent,
+                $options: 'i'
+            }
+        }, {
+            nickname: {
+                $regex: regexContent,
+                $options: 'i'
+            }
+        }]
+    }).exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
