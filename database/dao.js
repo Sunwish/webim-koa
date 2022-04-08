@@ -343,3 +343,15 @@ function getFriendMessages(_idSelf, _idFriend, startIndex = 0, count = 50) {
     .then(res => [null, res])
     .catch(err => [err]);
 }
+
+exports.getUnreadMessages =
+function getUnreadMessages(_id) {
+    return models.messageModel.find({
+        receiver: _id,
+        read: false
+    })
+    .sort( { time: -1 } )
+    .exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
