@@ -355,3 +355,19 @@ function getUnreadMessages(_id) {
     .then(res => [null, res])
     .catch(err => [err]);
 }
+
+exports.setMessageRead =
+function setMessageRead (_idSelf, _ids) {
+    var promises = [];
+    for (const _id of _ids) {
+        promises.push(models.messageModel.findOneAndUpdate({
+            _id: _id,
+            receiver: _idSelf
+        }, {
+            read: true
+        }).exec().then(() => true).catch(() => false))
+    }
+    return Promise.all(promises)
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
