@@ -588,7 +588,7 @@ function handleApi (router) {
         };
     })
 
-    router.put('/messageRead', async ctx => {
+    router.put('/messagesRead', async ctx => {
         // 获取身份信息
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
@@ -610,7 +610,7 @@ function handleApi (router) {
             return;
         }
 
-        [err, res] = await dao.setMessageRead(userInfo._id, body._ids);
+        [err, res] = await dao.setMessagesRead(userInfo._id, body._ids);
         
         if(err != null){
             ctx.body = {

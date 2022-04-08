@@ -356,8 +356,8 @@ function getUnreadMessages(_id) {
     .catch(err => [err]);
 }
 
-exports.setMessageRead =
-function setMessageRead (_idSelf, _ids) {
+exports.setMessagesRead =
+function setMessagesRead (_idSelf, _ids) {
     var promises = [];
     for (const _id of _ids) {
         promises.push(models.messageModel.findOneAndUpdate({
