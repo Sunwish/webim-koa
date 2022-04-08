@@ -482,6 +482,15 @@ function handleApi (router) {
             return;
         }
 
+        // 验证好友关系
+        if(!(await dao.isFriend(userInfo._id, body._id))) {
+            ctx.body = {
+                'errCode': 603,
+                'errMessage': 'No friend relationship to target user'
+            }
+            return;
+        }
+
         [err, res] = await dao.addMessage(userInfo._id, body._id, body.content, body.time);
 
         if(err != null){
