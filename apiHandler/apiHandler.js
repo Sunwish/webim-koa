@@ -113,7 +113,7 @@ function handleApi (router) {
             } else {
                 // Login success
                 const token = jwt.sign(res.toJSON(), jwtSecret, {
-                    expiresIn: 60 * 60 * 24 // 24 hours
+                    expiresIn: 365 * 60 * 60 * 24 // 365 * 24 hours
                 })
                 res.password = undefined;
                 ctx.body = {
@@ -401,6 +401,8 @@ function handleApi (router) {
             }
             return;
         }
+        
+        if(!res) { res = { 'friends': [] } }
         ctx.body = {
             'result': res
         };
@@ -427,6 +429,8 @@ function handleApi (router) {
             }
             return;
         }
+        
+        if(!res) { res = { 'friends': [] } }
         ctx.body = {
             'result': res
         };
