@@ -452,6 +452,51 @@ function handleApi (router) {
             }
         };
     })
+
+    router.post('/message', async ctx => {
+        // 获取身份信息
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        if(userInfo == null) {
+            console.log('[apiHandler - GET friendsSearach] Authorization invalid.');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+
+        // 验证id合法性
+        var body = ctx.request.body;
+        if(!(await dao.isUserExist(userInfo._id))) {
+            ctx.body = {
+                'errCode': 600,
+                'errMessage': 'Sender not exist'
+            }
+            return;
+        }
+        if(!(await dao.isUserExist(body._id))) {
+            ctx.body = {
+                'errCode': 601,
+                'errMessage': 'Receiver not exist'
+            }
+            return;
+        }
+
+        [err, res] = await dao.addMessage(userInfo._id, body._id, body.content, body.time);
+
+        if(err != null){
+            ctx.body = {
+                'errCode': err != null ? 100 : null,
+                'errMessage': err
+            }
+            return;
+        }
+        
+        ctx.body = {
+            'result': res
+        };
+    })
+
 /*
     router.get('/test/isFriend', async ctx => {
         res = await dao.isFriend('61d1631855fb7b32b3d2b38c1', '61c6d5c40c53d1c6969f6587')
