@@ -441,6 +441,27 @@ function handleApi (router) {
         ctx.body = res;
     })
 */
+
+    router.get('/test/user/:_id', async ctx => {
+        [err, res] = await dao.getUserById(ctx.params._id);
+        if(err != null){
+            ctx.body = {
+                'errCode': err != null ? 100 : null,
+                'errMessage': err
+            }
+            return;
+        }
+        else if(res == null){
+            ctx.body = {
+                'errCode': 201,
+                'errMessage': 'Account _id [' + ctx.params._id + '] does not exist.'
+            }
+            return;
+        }
+        ctx.body = {
+            'result': res
+        }
+    })
     // 测试一下
     router.get('/', async cxt => {
         cxt.body = 'Hello Web IM Api!';
