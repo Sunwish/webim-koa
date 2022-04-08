@@ -330,3 +330,16 @@ function addMessage(sender, receiver, content, time){
     .catch(err => [err]);
 }
 
+exports.getFriendMessages =
+function getFriendMessages(_idSelf, _idFriend, startIndex = 0, count = 50) {
+    return models.messageModel.find({
+        sender: _idSelf,
+        receiver: _idFriend
+    })
+    .sort( { time: -1 } )
+    .skip(+startIndex)
+    .limit(+count)
+    .exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
