@@ -315,3 +315,18 @@ function usersSearch (content, fuzzy) {
     .then(res => [null, res])
     .catch(err => [err]);
 }
+
+///////////////////////////////////////////////// MESSAGE
+exports.addMessage =
+function addMessage(sender, receiver, content, time){
+    return models.messageModel.create({
+        sender: sender,
+        receiver: receiver,
+        content: content,
+        time: time,
+        read: false
+    })
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
+
