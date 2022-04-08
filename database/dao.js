@@ -309,6 +309,8 @@ function usersSearch (content, fuzzy) {
                 $options: 'i'
             }
         }]
+    }).select({
+        password: 0
     }).exec()
     .then(res => [null, res])
     .catch(err => [err]);
