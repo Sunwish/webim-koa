@@ -317,6 +317,13 @@ function usersSearch (content, fuzzy) {
 }
 
 ///////////////////////////////////////////////// MESSAGE
+const senderPopulateFields = {
+    _id: 1,
+    username: 1,
+    nickname: 1,
+    avatar: 1,
+    imgUrl: 1
+};
 exports.addMessage =
 function addMessage(sender, receiver, content, time){
     return models.messageModel.create({
@@ -333,12 +340,25 @@ function addMessage(sender, receiver, content, time){
 exports.getFriendMessages =
 function getFriendMessages(_idSelf, _idFriend, startIndex = 0, count = 50) {
     return models.messageModel.find({
-        sender: _idSelf,
-        receiver: _idFriend
+        $or: [{
+            sender: _idSelf,
+            receiver: _idFriend
+        }, {
+            sender: _idFriend,
+            receiver: _idSelf
+        }]
     })
     .sort( { time: -1 } )
     .skip(+startIndex)
     .limit(+count)
+    .populate({
+        path: 'sender',
+        select: senderPopulateFields
+    })
+    .populate({
+        path: 'receiver',
+        select: senderPopulateFields
+    })
     .exec()
     .then(res => [null, res])
     .catch(err => [err]);
@@ -349,6 +369,9 @@ function getUnreadMessages(_id) {
     return models.messageModel.find({
         receiver: _id,
         read: false
+    }).populate({
+        path: 'sender',
+        select: senderPopulateFields
     })
     .sort( { time: -1 } )
     .exec()
