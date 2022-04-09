@@ -191,7 +191,7 @@ async function addFriend (_id, targetId) {
     session.startTransaction();
     var sessionUUID = session.id.id.toUUID().toString();
     console.log('[dao - addFriend] Start add friend transaction ' + sessionUUID + ' for user ' + _id + ' and ' + targetId + '.');
-    for(var i = 0; i < 2; i++){
+    for(var i = 0; i < (_id == targetId ? 1 : 2); i++){
         // i = 0: add B as A's friend;
         // i = 1: add A as B's friend;
         var friend = await models.friendModel.findOne({
