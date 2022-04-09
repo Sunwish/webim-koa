@@ -583,8 +583,24 @@ function handleApi (router) {
             return;
         }
         
+        // 将未读消息按 sender 分类
+        var res_sort = {};
+        for(const message of res) {
+            if(!res_sort[message.sender._id]) { 
+                res_sort[message.sender._id] = {
+                    sender: message.sender,
+                    messages: []
+                }; 
+            }
+            res_sort[message.sender._id].messages.push({
+                _id: message._id,
+                content: message.content,
+                time: message.time
+            });
+        }
+        
         ctx.body = {
-            'result': res
+            'result': res_sort
         };
     })
 
