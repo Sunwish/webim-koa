@@ -62,11 +62,64 @@ function handleSocket(io) {
 
         })
 
-        socket.on('message_chat', (content) => {
-            console.log('message_chat: ' + content);
-            io.emit('message_chat', {
-                content: content
-            });
+        socket.on('message_friend', async (data, callback) => {
+            var senderid = socketid2userid[socket.id];
+
+            // check friendship
+            console.log('[Socket - message_friend] ' + senderid + ' sending message to ' + data._id);
+            if(!(await dao.isFriend(senderid, data._id))) {
+                if (callback) {
+                    callback({
+                    'errCode': 603,
+                    'errMessage': 'No friend relationship to target user'
+                    });
+                }
+                return;
+            }
+
+            // check receiver exist
+            if (dao.isUserExist(data._id)) {
+                // insert message into db
+                [err, res] = await dao.addMessage(senderid, data._id, data.content, data.time);
+
+                // insert failed
+                if (err) {
+                    if (callback) {
+                        callback({
+                        "errCode": 100,
+                        "errMessage": err
+                        });
+                    }
+                }
+                // insert succeed
+                else {
+                    if (callback) {
+                        callback({
+                        "result": res
+                        });
+                    }
+                    // try send to receiver by socket
+                    var receiverSocket = onlineUsers[data._id];
+                    if (receiverSocket) {
+                        receiverSocket.emit('message_friend', res, received => {
+                            if (received) {
+                                /**
+                                 * NOT IMPLEMENT: set message state read
+                                 */
+                            }
+                        });
+                    }
+                }
+            }
+            // receiver not eixist
+            else {
+                if (callback) {
+                    callback({
+                    "errCode": 601,
+                    "errMessage": 'Receiver not exist'
+                    });
+                }
+            }
         })
         
         socket.on('disconnect', async () => {
