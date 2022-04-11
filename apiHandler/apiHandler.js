@@ -584,7 +584,6 @@ function handleApi (router) {
         }
         
         // 将未读消息按 sender 分类
-        /*
         var res_sort = {};
         for(const message of res) {
             if(!res_sort[message.sender._id]) { 
@@ -598,10 +597,10 @@ function handleApi (router) {
                 content: message.content,
                 time: message.time
             });
-        }*/
+        }
 
         ctx.body = {
-            'result': res
+            'result': res_sort
         };
     })
 
