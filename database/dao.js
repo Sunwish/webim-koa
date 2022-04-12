@@ -76,8 +76,8 @@ function getUserByEmail (email) {
 }
 
 exports.getUserById =
-function getUserById (_id) {
-    return models.userModel.findById(_id).exec()
+function getUserById (_id, selection) {
+    return models.userModel.findById(_id).select(selection).exec()
     .then(res => [null, res])
     .catch(err => [err]);
 }
@@ -324,6 +324,7 @@ const senderPopulateFields = {
     avatar: 1,
     imgUrl: 1
 };
+exports.senderPopulateFields = senderPopulateFields;
 exports.addMessage =
 function addMessage(sender, receiver, content, time){
     return models.messageModel.create({

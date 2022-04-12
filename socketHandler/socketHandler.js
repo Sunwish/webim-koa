@@ -18,7 +18,7 @@ function handleSocket(io) {
             // online
             onlineUsers[userInfo._id] = socket;
             socketid2userid[socket.id] = userInfo._id;
-            console.log('[Socket - authorization] user ' + userInfo._id + ' online');
+            console.log('[Socket - authorization] user ' + userInfo._id + ' online by socketId: ' + socket.id);
             if (!(await dao.isUserExist(userInfo._id))) {
                 if (callback) {
                     callback({ "result": false });
@@ -66,7 +66,7 @@ function handleSocket(io) {
             var senderid = socketid2userid[socket.id];
 
             // check friendship
-            console.log('[Socket - message_friend] ' + senderid + ' sending message to ' + data._id);
+            console.log('[Socket - message_friend] ' + senderid + ' sending message to ' + data._id + ' by sockeId: ' + socket.id);
             if(!(await dao.isFriend(senderid, data._id))) {
                 if (callback) {
                     callback({
@@ -101,6 +101,10 @@ function handleSocket(io) {
                     // try send to receiver by socket
                     var receiverSocket = onlineUsers[data._id];
                     if (receiverSocket) {
+                        // polulate sender info
+                        [_err, _res] = await dao.getUserById(senderid, dao.senderPopulateFields);
+                        res.sender = _res;
+                        // emit new message
                         receiverSocket.emit('message_friend', res, received => {
                             if (received) {
                                 /**
@@ -130,7 +134,9 @@ function handleSocket(io) {
             delete socketid2userid[socket.id];
             delete onlineUsers[userid];
 
-            console.log('[Socket - disconnect] user ' + userid + ' offline');
+            if (userid) {
+                console.log('[Socket - disconnect] user ' + userid + ' offline');
+            }
         })
     })
 }
