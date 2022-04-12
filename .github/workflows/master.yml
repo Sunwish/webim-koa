@@ -1,14 +1,54 @@
-name: 部署
-on:
+name: Deploy To Aliyun
+
+# 在master分支push操作后触发该流程
+on: 
   push:
-    branches:
+    branches: 
       - master
+
 jobs:
-  deploy:
-    name: 部署
+  build:
+    
     runs-on: ubuntu-latest
+
     steps:
-    - name: 部署
+    # 一个让你的workflow能够访问到你仓库的actions
+    - name: Checkout
+      uses: actions/checkout@master 
+
+    # 指定环境 Node.js v12
+    - name: Use Node.js 12
+      uses: actions/setup-node@master
+      with:
+        node-version: '12.x'
+    
+    # 在 GitHub 服务器打包
+    - name: Install npm dependencies
+      run: |
+        npm install
+
+    # 将打包结果拉至服务器
+    - name: Deploy to Server
+      uses: easingthemes/ssh-deploy@main
+      env:
+          # 服务器私钥
+          SSH_PRIVATE_KEY: ${{ secrets.SUNWISH_SERVER_KEY }}
+          # 服务器地址
+          REMOTE_HOST: ${{ secrets.SUNWISH_SERVER_IP }}
+          # 服务器 SSH 端口
+          REMOTE_PORT: ${{ secrets.SUNWISH_SERVER_SSH_PORT }}
+          # 登录账户
+          REMOTE_USER: ${{ secrets.SUNWISH_SERVER_USERNAME }}
+          # 服务器存储位置
+          TARGET: '/home/projects/webim-koa'
+    
+    # 备选逻辑：
+    # 取消 Install npm dependencies 逻辑
+    # ssh-deploy env 设置 EXCLUDE: "/node_modules/"
+    # 然后在 ssh-action script 中进行 npm install
+    # 在服务器终止原进程并运行新部署的项目
+    
+    - name: Run on Server
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.SUNWISH_SERVER_IP }}
@@ -17,9 +57,6 @@ jobs:
         port: ${{ secrets.SUNWISH_SERVER_SSH_PORT }}
         script: |
           cd /home/projects/webim-koa
-          rm package-lock.json -f
-          git pull origin master
-          npm install
           kill -9 `netstat -nlp | grep :12345 | awk '{print $7}' | awk -F '/' '{print $1}'`
           nohup node /home/projects/webim-koa/app.js >> output.log 2>&1 &
           exit
