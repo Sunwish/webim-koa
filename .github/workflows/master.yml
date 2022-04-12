@@ -1,0 +1,25 @@
+name: 部署
+on:
+  push:
+    branches:
+      - master
+jobs:
+  deploy:
+    name: 部署
+    runs-on: ubuntu-latest
+    steps:
+    - name: 部署
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SUNWISH_SERVER_IP }}
+        username: ${{ secrets.SUNWISH_SERVER_USERNAME }}
+        key: ${{ secrets.SUNWISH_SERVER_KEY }}
+        port: ${{ secrets.SUNWISH_SERVER_SSH_PORT }}
+        script: |
+          cd /home/projects/webim-koa
+          rm package-lock.json -f
+          git pull origin master
+          npm install
+          kill -9 `netstat -nlp | grep :12345 | awk '{print $7}' | awk -F '/' '{print $1}'`
+          nohup node /home/projects/webim-koa/app.js >> output.log 2>&1 &
+          exit
