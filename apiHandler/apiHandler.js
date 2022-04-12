@@ -641,12 +641,556 @@ function handleApi (router) {
         };
 
     })
-/*
-    router.get('/test/isFriend', async ctx => {
-        res = await dao.isFriend('61d1631855fb7b32b3d2b38c1', '61c6d5c40c53d1c6969f6587')
-        ctx.body = res;
+
+    /////////////////////////////////////////////////////////////////////////////////////////// 群组api
+    //上传群组头像
+    router.post('/groups/uploadavatar', async ctx => {
+        // 身份认证
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        if(userInfo == null || (!dao.hasAdminAuth(userInfo._id, body.groupId) && !dao.hasGroupOwnerAuth(userInfo._id, body.groupId))) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+
+        // 上传图像参数验证
+        if(!ctx.request.files || !ctx.request.files.file || !ctx.request.files.file.path || !ctx.request.files.file.name) {
+            console.log('param error');
+            ctx.body = {
+                'errCode': 302,
+                'errMessage': 'param error',
+            };
+            return;
+        }
+        const file = ctx.request.files.file;
+        var groupInfo = ctx.request.body;
+        // 创建读取流
+        const reader = fs.createReadStream(file.path);
+        const fileName = groupInfo._id + '-' + Date.now() + '.jpg';
+        const filePath = avatarDir + fileName;
+        // 创建写入流
+        const upStream = fs.createWriteStream(filePath);
+        upStream.on('error', () => {
+            console.log('server file path error');
+            ctx.body = {
+                'errCode': 100,
+                'errMessage': 'server file path error',
+            };
+            return;
+        });
+
+        // 从读取流通过管道写进写入流
+        await new Promise((resolve, reject) => {
+            reader.pipe(upStream).on('finish', async () => {
+                console.log('pipe file finish');
+
+                // 更新头像
+                [err, res] = await dao.updateGroupAvatar(groupInfo._id, fileName, ctx.request.header.host + '/uploads/avatars/' + fileName);
+                if(err != null){
+                    ctx.body = {
+                        'errCode': 304,
+                        'errMessage': err,
+                        'result': {
+                            'avatar': fileName,
+                            'imgUrl': ctx.request.header.host + '/uploads/avatars/' + fileName
+                        }
+                    }
+                } else {
+                    ctx.body = {
+                        'result' : {
+                            'avatar': fileName,
+                            'imgUrl' : ctx.request.header.host + '/uploads/avatars/' + fileName
+                        }
+                    };
+                }
+                resolve();
+            }).on('error', (err) => {
+                console.log('pipe file error');
+                ctx.body = {
+                    'errCode': 100,
+                    'errMessage': 'pipe file error',
+                };
+                reject(err)
+            });
+        });
     })
-*/
+
+    //更新群组头像
+    router.post('/groups/updateavatar', async ctx => {
+        // 获取身份信息
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        var body = ctx.request.body;
+
+        if(userInfo == null ) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+        if( !dao.hasAdminAuth(userInfo._id, body.groupId) && !dao.hasGroupOwnerAuth(userInfo._id, body.groupId)) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': "you don't have authorization to update group avatar!!",
+            };
+            return;
+        }
+        // 验证指定头像文件是否存在
+        if(!fs.existsSync(avatarDir + body.avatar)) {
+            ctx.body = {
+                'errCode': 303,
+                'errMessage': 'Avatar file [' + body.avatar + '] is not found.'
+            }
+            return;
+        }
+
+        // 修改头像
+        [err, res] = await dao.updateUserAvatar(userInfo._id, body.avatar, ctx.request.header.host + '/uploads/avatars/' + body.avatar);
+
+        if(err != null){
+            ctx.body = {
+                'errCode': err != null ? 100 : null,
+                'errMessage': err
+            }
+            return;
+        }
+        ctx.body = {
+            'result': {
+                avatar: res.avatar,
+                imgUrl: res.imgUrl
+            }
+        };
+
+    })
+    //创建群组
+    router.post('/groups/create', async ctx => {
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        var body = ctx.request.body;
+
+        if(userInfo == null) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+        // Check infomation integrity
+        if(body.groupnickname == null || body.groupnickname == ''){
+            ctx.body = {
+                'errCode': 201,
+                'errMessage': 'groupnickname connot be empty.'
+            };
+            return;
+        }
+        // create group
+        var defulatAvarar = 'blank-avatar.png';
+        [err, res] = await dao.createGroup({
+            'groupnickname': body.groupnickname,
+            'groupnumber': 0,
+            'createday': Date.now(),
+            'capacity':200,
+            'memnumber':1,
+            'avatar': defulatAvarar,
+            'imgUrl': ctx.request.header.host + '/uploads/avatars/' + defulatAvarar,
+            'owner':userInfo._id,
+            'managers':[],
+            'members':[]
+        });
+
+        ctx.body = {
+            'errCode': !res ? 202 : null,
+            'errMessage': !res ? "failure to create a new group!"+err : null,
+            'result': !res ? null : "success to create a new group!",
+        }
+        return; 
+    })
+
+    //搜索群组
+    router.get('/groups/Search', async ctx => {
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+
+        if(userInfo == null) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+        // search group
+        if(ctx.query.searchField == 0){
+            [err, res] = await dao.groupSearch(ctx.query.content, ctx.query.searchType);
+            ctx.body = {
+                'errCode': err != null ? 203 : null,
+                'errMessage': err,
+                'result': res
+            }
+        }else if(ctx.query.searchField == 1){
+            [err, res] = await dao.myNormalGroupsSearch(userInfo._id, ctx.query.content, ctx.query.searchType);
+            ctx.body = {
+                'errCode': err != null ? 203 : null,
+                'errMessage': err,
+                'result': res
+            }
+        }else if(ctx.query.searchField == 2){
+            [err, res] = await dao.myManageGroupsSearch(userInfo._id, ctx.query.content, ctx.query.searchType);
+            ctx.body = {
+                'errCode': err != null ? 203 : null,
+                'errMessage': err,
+                'result': res
+            }
+        }else{
+            ctx.body = {
+                'errCode': 211,
+                'errMessage': "error searchField"
+            }
+        }
+        
+    })
+
+    //获取我管理的群组
+    router.get('/groups/getMyManageGroups', async ctx => {
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        var body = ctx.request.body;
+
+        if(userInfo == null) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+        // get myManageGroups
+        [err, res] = await dao.getMyManageGroups(userInfo._id);
+        ctx.body = {
+            'errCode': err != null ? 203 : null,
+            'errMessage': err,
+            'result': res
+        }
+    })
+
+    //获取我普通群组
+    router.get('/groups/getMyNormalGroups', async ctx => {
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        var body = ctx.request.body;
+
+        if(userInfo == null) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+        // get myManageGroups
+        [err, res] = await dao.getMyNormalGroups(userInfo._id);
+        ctx.body = {
+            'errCode': err != null ? 203 : null,
+            'errMessage': err,
+            'result': res
+        }
+    })
+
+    //修改群组名
+    router.post('/groups/updateGroupName', async ctx => {
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        var body = ctx.request.body;
+
+        if(userInfo == null ) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+        if(!(await dao.existGroup(body.groupId))){
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': "this group isn't exist!!",
+            };
+            return;
+        }
+        if( !dao.hasAdminAuth(userInfo._id, body.groupId) && !dao.hasGroupOwnerAuth(userInfo._id, body.groupId)) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': "you don't have authorization to update group name!!",
+            };
+            return;
+        }
+        //  update GroupName
+        [err, res] = await dao.updateGroupName(body.groupId, body.newgroupnickname);
+        ctx.body = {
+            'errCode': err != null ? 204 : null,
+            'errMessage': err,
+            'result': res
+        }
+    })
+
+    //解散群组
+    router.delete('/groups/disbandGroup', async ctx => {
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        var body = ctx.request.body;
+
+        if(userInfo == null) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+        if(  !dao.hasGroupOwnerAuth(userInfo._id, body.groupId)) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': "you don't have authorization to disband this group!!",
+            };
+            return;
+        }
+        if(!(await dao.existGroup(body.groupId))){
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': "this group isn't exist!!",
+            };
+            return;
+        }
+        //  disband Group 
+        [err, res] = await dao.disbandGroup(userInfo._id, body.groupId);
+        ctx.body = {
+            'errCode': !res ? 205 : null,
+            'errMessage': !res ? "failure to disband a group!" : null,
+            'result': res ? "success to disband a group!" : null
+        }
+    })
+
+    //加入群组
+    router.post('/groups/joinGroup', async ctx => {
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        var body = ctx.request.body;
+
+        if(userInfo == null) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+        if(await dao.isGroupMember(userInfo._id, body.groupId)){
+            ctx.body = {
+                'Message': "has already join this group!!!"
+            }
+            return;
+        }
+        if(!(await dao.existGroup(body.groupId))){
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': "this group isn't exist!!",
+            };
+            return;
+        }
+        //  join a Group 
+        [err, res] = await dao.joinGroup(userInfo._id, body.groupId);
+        ctx.body = {
+            'errCode': !res ? 206 : null,
+            'errMessage': !res ? "failure to join a group!" : null,
+            'result': res ? "success to join a group!" : null
+        }
+    })
+
+    //退出群组
+    router.delete('/groups/quitGroup', async ctx => {
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+
+        if(userInfo == null) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+        if(!(await dao.isGroupMember(userInfo._id, ctx.query.groupId))) {
+            ctx.body = {
+                'Message': "you hasn't join this group!!!"
+            }
+            return ;
+        }
+        if(!(await dao.existGroup(body.groupId))){
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': "this group isn't exist!!",
+            };
+            return;
+        }
+        //  quit a Group 
+        [err, res] = await dao.quitGroup(userInfo._id, ctx.query.groupId);
+        ctx.body = {
+            'errCode': !res ? 207 : null,
+            'errMessage': !res ? "failure to quit a group!" : null,
+            'result': res ? "success to quit a group!" : null
+        }
+    })
+
+    //添加群组管理员
+    router.post('/groups/addGroupManager', async ctx => {
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        var body = ctx.request.body;
+
+        if(userInfo == null) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+        if(!(await dao.isUserExist(body.userId))){
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': "this user isn't exist!!",
+            };
+            return;
+        }
+        if(!(await dao.existGroup(body.groupId))){
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': "this group isn't exist!!",
+            };
+            return;
+        }
+        if( !(await dao.hasGroupOwnerAuth(userInfo._id, body.groupId))) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': "you don't have authorization to add a group manager!!",
+            };
+            return;
+        }
+        
+        if(!(await dao.isNormalMember(body.userId, body.groupId))) {
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'the people has already been one of the manager of this group!! ',
+            };
+            return;
+        }
+
+        //  add a Group Manager
+        [err, res] = await dao.addGroupManager(body.userId, body.groupId);
+        ctx.body = {
+            'errCode': !res ? 208 : null,
+            'errMessage': !res ? "failure to add a Group Manager!" : null,
+            'result': res ? "success to add a Group Manager!" : null
+        }
+    })
+
+    //删除群组管理员身份
+    router.delete('/groups/deleteGroupManager', async ctx => {
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        var body = ctx.request.body;
+
+        if(userInfo == null ) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+        if(!(await dao.isUserExist(body.userId))){
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': "this user isn't exist!!",
+            };
+            return;
+        }
+        if(!(await dao.existGroup(body.groupId))){
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': "this group isn't exist!!",
+            };
+            return;
+        }
+
+        if( !(await dao.hasGroupOwnerAuth(userInfo._id, body.groupId))) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': "you don't have authorization to delete a group manager!!",
+            };
+            return;
+        }
+        //  delete a Group Manager
+        [err, res] = await dao.deleteGroupManager(body.userId, body.groupId);
+        ctx.body = {
+            'errCode': !res ? 208 : null,
+            'errMessage': !res ? "failure to delete a Group Manager!" : null,
+            'result': res ? "success to delete a Group Manager!" : null
+        }
+    })
+
+    //获取群所有成员
+    router.get('/groups/getGroupAllMembers', async ctx => {
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        var body = ctx.request.body;
+
+        if(userInfo == null) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+        // get Group All Members
+        [err, res] = await dao.getGroupAllMembers(body.groupId);
+        ctx.body = {
+            'errCode': err != null ? 209 : null,
+            'errMessage': err,
+            'result': res
+        }
+    })
+
+    //查询群成员
+    router.get('/groups/groupMembersSearch', async ctx => {
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        var body = ctx.request.body;
+
+        if(userInfo == null) {
+            console.log('authorization invalid');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+        // search Group  Member
+        [err, res] = await dao.groupMembersSearch(body.groupId, ctx.query.content, ctx.query.fuzzy);
+        ctx.body = {
+            'errCode': err != null ? 210 : null,
+            'errMessage': err,
+            'result': res
+        }
+    })
+
 
     router.get('/test/user/:_id', async ctx => {
         [err, res] = await dao.getUserById(ctx.params._id);
