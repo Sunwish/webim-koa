@@ -681,6 +681,7 @@ function groupSearch (content, searchType) {
     
 }
 
+
 //搜索我管理的群组
 exports.myManageGroupsSearch =
 function myManageGroupsSearch (_id, content, searchType) {
@@ -842,11 +843,7 @@ function updateGroupAvatar (groupId, avatarName, imgUrl) {
 
 //解散群组
 exports.disbandGroup = 
-async function disbandGroup(userId, groupId){
-    if (!(await hasGroupOwnerAuth(userId, groupId))) {
-        return [null, false];
-    }
-
+async function disbandGroup(groupId){
     // Use transaction for delete group 
     var session = await models.mygroupsModel.startSession();
     session.startTransaction();
@@ -857,8 +854,8 @@ async function disbandGroup(userId, groupId){
         var managersNum = group.managers.push();
         var membersNum = group.members.push();
         for(var i = 0; i < membersNum; i++){
-            models.mygroupsModel.findByIdAndUpdate(
-                { "user": group.members[i], "referrals": groupId },
+            await models.mygroupsModel.findOneAndUpdate(
+                { "userId": group.members[i]},
                 { "$pull": { "normalgroups": groupId } },
                 { "multi": true }
               ).catch(err => [err]);
@@ -869,8 +866,8 @@ async function disbandGroup(userId, groupId){
             }
         }
         for(var i = 0; i < managersNum; i++){
-            models.mygroupsModel.findByIdAndUpdate(
-                { "user": group.managers[i], "referrals": groupId },
+            await models.mygroupsModel.findOneAndUpdate(
+                { "userId": group.managers[i]},
                 { "$pull": { "managegroups": groupId } },
                 { "multi": true }
               ).catch(err => [err]);
@@ -880,8 +877,8 @@ async function disbandGroup(userId, groupId){
                 return [null, false]
             }
         }
-        models.mygroupsModel.findByIdAndUpdate(
-            { "user": group.owner, "referrals": groupId },
+        await models.mygroupsModel.findOneAndUpdate(
+            { "userId": group.owner},
             { "$pull": { "managegroups": groupId } },
             { "multi": true }
           ).catch(err =>[err]);
@@ -995,7 +992,7 @@ async function quitGroup (userId, groupId) {
     if(await isGroupOwner(userId, groupId)){
         return await disbandGroup(userId,groupId);       //群主退出则删除该群
     }else if(await isGroupAdmin(userId, groupId)){   //admin退出
-        await models.mygroupsModel.findByIdAndUpdate(
+        await models.mygroupsModel.findOneAndUpdate(
             { userId: userId }, 
             { $pull: { managegroups: groupId } }
         ).catch(err => [err]);
@@ -1014,7 +1011,7 @@ async function quitGroup (userId, groupId) {
             return [null, false]
         }
     }else{                                       ////////////普通成员退出
-        await models.mygroupsModel.findByIdAndUpdate(
+        await models.mygroupsModel.findOneAndUpdate(
             { userId: userId }, 
             { $pull: { normalgroups: groupId } }
             ).catch(err => [err]);
@@ -1045,7 +1042,7 @@ async function addGroupManager (userId, groupId) {
     // Use transaction for add
     var session = await models.mygroupsModel.startSession();
     session.startTransaction();
-    await models.mygroupsModel.findByIdAndUpdate(
+    await models.mygroupsModel.findOneAndUpdate(
         { userId: userId }, 
         { $push: { managegroups: groupId } }
     ).catch(err => [err]);
@@ -1054,7 +1051,7 @@ async function addGroupManager (userId, groupId) {
         session.endSession();
         return [null, false]
     }
-    await models.mygroupsModel.findByIdAndUpdate(
+    await models.mygroupsModel.findOneAndUpdate(
         { userId: userId }, 
         { $pull: { normalgroups: groupId } }
     ).catch(err => [err]);
@@ -1077,6 +1074,10 @@ async function addGroupManager (userId, groupId) {
         { $pull: { members: userId } }
     ).catch(err => [err]);
     if(err){
+        await models.groupModel.findByIdAndUpdate(
+            { _id: groupId }, 
+            { $pull: { managers: userId } }
+        );
         await session.abortTransaction();
         session.endSession();
         return [null, false]
@@ -1097,7 +1098,7 @@ async function deleteGroupManager (userId, groupId) {
     // Use transaction for delete 
     var session = await models.mygroupsModel.startSession();
     session.startTransaction();
-    await models.mygroupsModel.findByIdAndUpdate(
+    await models.mygroupsModel.findOneAndUpdate(
         { userId: userId }, 
         { $pull: { managegroups: groupId } }
     ).catch(err => [err]);
@@ -1106,7 +1107,7 @@ async function deleteGroupManager (userId, groupId) {
         session.endSession();
         return [null, false]
     }
-    await models.mygroupsModel.findByIdAndUpdate(
+    await models.mygroupsModel.findOneAndUpdate(
         { userId: userId }, 
         { $push: { normalgroups: groupId } }
     ).catch(err => [err]);
@@ -1129,7 +1130,7 @@ async function deleteGroupManager (userId, groupId) {
         { $push: { members: userId } }
     ).catch(err => [err]);
     if(err){
-        models.groupModel.findByIdAndUpdate(
+        await models.groupModel.findByIdAndUpdate(
             { _id: groupId }, 
             { $push: { managers: userId } }
         );
