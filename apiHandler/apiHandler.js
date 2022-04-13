@@ -457,7 +457,7 @@ function handleApi (router) {
         // 获取身份信息
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
-            console.log('[apiHandler - GET friendsSearach] Authorization invalid.');
+            console.log('[apiHandler - POST message] Authorization invalid.');
             ctx.body = {
                 'errCode': 301,
                 'errMessage': 'authorization invalid',
@@ -510,7 +510,7 @@ function handleApi (router) {
         // 获取身份信息
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
-            console.log('[apiHandler - GET friendsSearach] Authorization invalid.');
+            console.log('[apiHandler - GET friendMessages] Authorization invalid.');
             ctx.body = {
                 'errCode': 301,
                 'errMessage': 'authorization invalid',
@@ -555,7 +555,7 @@ function handleApi (router) {
         // 获取身份信息
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
-            console.log('[apiHandler - GET friendsSearach] Authorization invalid.');
+            console.log('[apiHandler - GET unreadMessages] Authorization invalid.');
             ctx.body = {
                 'errCode': 301,
                 'errMessage': 'authorization invalid',
@@ -608,7 +608,7 @@ function handleApi (router) {
         // 获取身份信息
         const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
         if(userInfo == null) {
-            console.log('[apiHandler - GET friendsSearach] Authorization invalid.');
+            console.log('[apiHandler - PUT messageRead] Authorization invalid.');
             ctx.body = {
                 'errCode': 301,
                 'errMessage': 'authorization invalid',
@@ -627,6 +627,51 @@ function handleApi (router) {
         }
 
         [err, res] = await dao.setMessagesRead(userInfo._id, body._ids);
+        
+        if(err != null){
+            ctx.body = {
+                'errCode': err != null ? 100 : null,
+                'errMessage': err
+            }
+            return;
+        }
+        
+        ctx.body = {
+            'result': res
+        };
+
+    })
+
+    router.put('/messagesReadFrom', async ctx => {
+        // 获取身份信息
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        if(userInfo == null) {
+            console.log('[apiHandler - PUT messageReadFrom] Authorization invalid.');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+
+        // 验证id合法性
+        var body = ctx.request.body;
+        if (!dao.isObjectIdValid(userInfo._id)) {
+            ctx.body = {
+                'errCode': 600,
+                'errMessage': 'Self not exist'
+            }
+            return;
+        }
+        if (!dao.isObjectIdValid(body._id)) {
+            ctx.body = {
+                'errCode': 601,
+                'errMessage': 'Sender not exist'
+            }
+            return;
+        }
+
+        [err, res] = await dao.setMessagesReadFrom(userInfo._id, body._id);
         
         if(err != null){
             ctx.body = {

@@ -15,6 +15,11 @@ function connect (app, connectString) {
     });
 }
 
+function isObjectIdValid (_id) {
+    return mongo.Types.ObjectId.isValid(_id);
+}
+exports.isObjectIdValid = isObjectIdValid;
+
 /////////////////////////////////////////////////
 
 exports.addUser = 
@@ -394,6 +399,18 @@ function setMessagesRead (_idSelf, _ids) {
     return Promise.all(promises)
     .then(res => [null, res])
     .catch(err => [err]);
+}
+
+exports.setMessagesReadFrom =
+function setMessagesReadFrom (_idSelf, _id) {
+    return models.messageModel.updateMany({
+        sender: _id,
+        receiver: _idSelf
+    }, {
+        read: true
+    }).exec()
+    .then(() => [null, true])
+    .catch(() => [err]);
 }
 
 ///////////////////////////////////////////////////////////////////////// GROUP
