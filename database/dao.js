@@ -425,7 +425,7 @@ const memberPopulateFields = {
 
 const groupPopulateFields = {
     _id: 1,
-    groupname: 1,
+    groupnickname: 1,
     groupnumber: 1,
     createday: 1,
     capacity:1,
