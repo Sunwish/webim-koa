@@ -1,5 +1,6 @@
 var jwt = require('jsonwebtoken');
 const dao = require('../database/dao');
+const redis = require('../database/redis');
 const path = require('path'); // 路径模块
 const fs = require('fs');
 
@@ -84,6 +85,20 @@ function handleApi (router) {
     router.post('/login/login', async ctx => {
         var body = ctx.request.body;
         var err, res, errMessage;
+
+        // search redis
+        /*
+        var redisRes = await redis.getLoginUser(body.account, body.password);
+        if (redisRes) {
+            // console.log('Redis hit for login');
+            ctx.body = {
+                'result': jwt.decode(redisRes),
+                'token': redisRes
+            }
+            return;
+        }
+        */
+
         if(+body.loginType == 0) {
             [err, res] = await dao.getUserByUsername(body.account);
         }
@@ -112,10 +127,15 @@ function handleApi (router) {
                 }
             } else {
                 // Login success
+                res.password = undefined;
                 const token = jwt.sign(res.toJSON(), jwtSecret, {
                     expiresIn: 365 * 60 * 60 * 24 // 365 * 24 hours
                 })
-                res.password = undefined;
+
+                // Set to redis
+                //redis.setLoginUser(body.account, body.password, token);
+
+                // Return result
                 ctx.body = {
                     'result': res,
                     'token': token
@@ -656,6 +676,7 @@ function handleApi (router) {
 
         // 验证id合法性
         var body = ctx.request.body;
+        console.log("Setting message read from [" + body._id + "] for user [" + userInfo._id + "]");
         if (!dao.isObjectIdValid(userInfo._id)) {
             ctx.body = {
                 'errCode': 600,

@@ -13,6 +13,7 @@ const koajwt = require('koa-jwt'); // koa-jwt 验证中间件
 /////////////////////////////////////////////////////////////
 // require components
 const dao = require('./database/dao');
+const redis = require('./database/redis');
 const apiHandler = require('./apiHandler/apiHandler');
 const socketHandler = require('./socketHandler/socketHandler');
 /////////////////////////////////////////////////////////////
@@ -36,6 +37,11 @@ const io = require('socket.io')(server, {
 dao.connect(app, 'mongodb://' + config[config.mode].database.mongodb.host + ':' + config[config.mode].database.mongodb.port + '/' + config[config.mode].database.mongodb.collection)
 .then(() => {
     console.log('[Server] Connect to mongodb successed.');
+    /*
+    redis.connectClient(err => {
+        console.log("err: " + err);
+    });
+    */
     dbTest(); // db test
 
     configurateApp(app); // configurate middleware inside here
