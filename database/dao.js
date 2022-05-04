@@ -1292,6 +1292,34 @@ function getGroupMessages( groupId, startIndex = 0, count = 50) {
     .then(res => [null, res])
     .catch(err => [err]);
 }
+exports.addNotification =
+async function addNotification(sender, receiver, type, content, time) {
+    return models.notificationModel.create({
+        sender: sender,
+        receiver: receiver,
+        type: type,
+        content: content,
+        time: time,
+        read: false,
+        status: 0
+    })
+    .then(res => [null, res])
+    .catch(err => err);
+}
+
+exports.getNotifications =
+async function getNotifications(_id) {
+    return models.notificationModel.find({
+        receiver: _id
+    })
+    .populate({
+        path: 'sender',
+        select: senderPopulateFields
+    })
+    .exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
 
 exports.getUnreadGroupMessages =
 function getUnreadGroupMessages(userId) {
@@ -1305,6 +1333,20 @@ function getUnreadGroupMessages(userId) {
         select: groupPopulateFields
     })
     .sort( { time: -1 } )
+    .exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
+exports.getUnreadNotifications =
+async function getUnreadNotifications(_id) {
+    return models.notificationModel.find({
+        receiver: _id,
+        read: false
+    })
+    .populate({
+        path: 'sender',
+        select: senderPopulateFields
+    })
     .exec()
     .then(res => [null, res])
     .catch(err => [err]);
@@ -1348,6 +1390,36 @@ function getGroupMessageReceivers (groupId) {
     
     .select("owner managers members")
     .exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
+exports.setNotificationsRead =
+function setNotificationsRead(_ids, _idSelf) {
+    var promises = [];
+    for (const _id of _ids) {
+        promises.push(models.notificationModel.findOneAndUpdate({
+            _id: _id,
+            receiver: _idSelf
+        }, {
+            read: true
+        }).exec().then(() => true).catch(() => false))
+    }
+    return Promise.all(promises)
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
+
+exports.markNotificationResult =
+function markNotificationResult(_id, _idSelf, result) {
+    return models.notificationModel.findOneAndUpdate({
+        _id: _id,
+        receiver: _idSelf,
+    }, {
+        status: Number(result),
+        read: true
+    }, {
+        new: true
+    }).exec()
     .then(res => [null, res])
     .catch(err => [err]);
 }
@@ -1406,3 +1478,9 @@ async function setGroupMessagesReadFrom (_idSelf, groupId) {
 
 
 /******************************* new add code end ********************************/
+exports.getNotificationById =
+function getNotificationById(_id) {
+    return models.notificationModel.findById(_id).exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
