@@ -95,6 +95,32 @@ const mygroupSchema = mongo.Schema({
         ref: 'groups'
     }]
 })
+//********************* new add code start *********************//
+const groupMessageSchema = mongo.Schema({
+    sender: {
+        type: mongo.Schema.Types.ObjectId,
+        ref: 'users'
+    },
+    group: {
+        type: mongo.Schema.Types.ObjectId,
+        ref: 'groups'
+    },
+    content: {
+        type: mongo.Schema.Types.String
+    },
+    time: {
+        type: mongo.Schema.Types.Date
+    },
+    readers: [{
+        type: mongo.Schema.Types.Boolean,
+        ref: 'users'
+    }],
+    unreaders: [{
+        type: mongo.Schema.Types.ObjectId,
+        ref: 'users'
+    }]
+})
+//********************* new add code end *********************//
 //////////////////////////////////////// MODEL
 
 var userModel = mongo.model('users', userSchema);
@@ -114,3 +140,8 @@ exports.groupModel = groupModel;
 
 var mygroupsModel = mongo.model('mygroups', mygroupSchema);
 exports.mygroupsModel = mygroupsModel;
+
+//********************* new add code start *********************//
+var groupMessageModel = mongo.model('groupmessages', groupMessageSchema);
+exports.groupMessageModel = groupMessageModel;
+//********************* new add code start *********************//
