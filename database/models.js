@@ -121,6 +121,31 @@ const groupMessageSchema = mongo.Schema({
     }]
 })
 //********************* new add code end *********************//
+const notificationSchema = mongo.Schema({
+    sender: {
+        type: mongo.Schema.Types.ObjectId,
+        ref: "users"
+    },
+    receiver: {
+        type: mongo.Schema.Types.ObjectId,
+        ref: "users"
+    },
+    type: {
+        type: mongo.Schema.Types.Number
+    },
+    content: {
+        type: mongo.Schema.Types.String
+    },
+    time: {
+        type: mongo.Schema.Types.Date
+    },
+    read: {
+        type: mongo.Schema.Types.Boolean
+    },
+    status: {
+        type: mongo.Schema.Types.Number
+    }
+})
 //////////////////////////////////////// MODEL
 
 var userModel = mongo.model('users', userSchema);
@@ -145,3 +170,5 @@ exports.mygroupsModel = mygroupsModel;
 var groupMessageModel = mongo.model('groupmessages', groupMessageSchema);
 exports.groupMessageModel = groupMessageModel;
 //********************* new add code start *********************//
+var notificationModel = mongo.model('notifications', notificationSchema);
+exports.notificationModel = notificationModel;
