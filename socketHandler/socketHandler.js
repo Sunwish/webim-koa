@@ -53,10 +53,39 @@ function handleSocket(io) {
                 });
             }
 
+             /************************************************/
+            // get unread Group messages from db
+            if (callback) callback({ "result": true });
+            [err, group_res] = await dao.getUnreadGroupMessages(userInfo._id);
+            if (err) {
+                socket.emit('unread', {
+                    "errCode": 100,
+                    "errMessage": err
+                });
+                return;
+            }
+            // 将未读消息按 group 分类
+            var group_res_sort = {};
+            for(const message of group_res) {
+                if(!group_res_sort[message.group._id]) { 
+                    group_res_sort[message.group._id] = {
+                        group: message.group,
+                        messages: []
+                    }; 
+                }
+                group_res_sort[message.group._id].messages.push({
+                    _id: message._id,
+                    sender: message.sender,
+                    content: message.content,
+                    time: message.time,
+                    unreadNum: message.unreader.length
+                });
+            }
             // emit unread messages
             socket.emit('unread', {
                 "result": {
-                    "friend": res_sort
+                    "friend": res_sort,
+                    "group": group_res_sort
                 }
             })
 
@@ -121,6 +150,76 @@ function handleSocket(io) {
                     callback({
                     "errCode": 601,
                     "errMessage": 'Receiver not exist'
+                    });
+                }
+            }
+        })
+        
+        socket.on('message_group', async (data, callback) => {
+            var senderid = socketid2userid[socket.id];
+
+            // check friendship
+            console.log('[Socket - message_group] ' + senderid + ' sending message to group ' + data._id + ' by sockeId: ' + socket.id);
+            if(!(await dao.isGroupMember(senderid, data._id))) {
+                if (callback) {
+                    callback({
+                    'errCode': 603,
+                    'errMessage': 'you are not a member of this group'
+                    });
+                }
+                return;
+            }
+
+            // check group exist
+            if (dao.existGroup(data._id)) {
+                // insert groupMessage into db
+                [err, res] = await dao.addGroupMessage(senderid, data._id, data.content, data.time);
+
+                // insert failed
+                if (err) {
+                    if (callback) {
+                        callback({
+                        "errCode": 100,
+                        "errMessage": err
+                        });
+                    }
+                }
+                // insert succeed
+                else {
+                    if (callback) {
+                        callback({
+                        "result": res
+                        });
+                    }
+                    // try send to receiver by socket
+                    var receiverIds = res.unreaders;
+                    for(var i = 0; i < receiverIds.push(); i++){
+                        var receiverSocket = onlineUsers[receiverIds[i]];
+                        if (receiverSocket) {
+                            // polulate group info
+                            [_err, groupInfo] = await dao.getGroupById(data._id);
+                            res.group = groupInfo;
+                            //polulate sender info
+                            [_err, _res] = await dao.getUserById(senderid, dao.senderPopulateFields);
+                            res.sender = _res;
+                            // emit new message
+                            receiverSocket.emit('message_group', res, received => {
+                                if (received) {
+                                    /**
+                                     *  set message state read: await dao.setGroupMessagesRead(received._id,received.groupMessageIds)
+                                     */
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+            // group not eixist
+            else {
+                if (callback) {
+                    callback({
+                    "errCode": 601,
+                    "errMessage": 'this group is not exist'
                     });
                 }
             }

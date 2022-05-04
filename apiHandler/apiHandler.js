@@ -598,10 +598,32 @@ function handleApi (router) {
                 time: message.time
             });
         }
-
+        //获取未读群组消息
+        [_err, _res] = await dao.getUnreadGroupMessages(userInfo._id);
+        // 将未读消息按 group 分类
+        var _res_sort = {};
+        for(const message of _res) {
+            if(!_res_sort[message.group._id]) { 
+                _res_sort[message.group._id] = {
+                    group: message.group,
+                    messages: []
+                }; 
+            }
+            _res_sort[message.group._id].messages.push({
+                _id: message._id,
+                sender: message.sender,
+                content: message.content,
+                time: message.time,
+                unreadNum: message.unreader.length
+            });
+        }
         ctx.body = {
-            'result': res_sort
+            'result': {
+                "friend": res_sort,
+                "group": _res_sort
+            }
         };
+
     })
 
     router.put('/messagesRead', async ctx => {
@@ -1364,6 +1386,190 @@ function handleApi (router) {
         }
     })
 
+    /******************************add new code start******************************/
+    router.get('/getGroupMessages', async ctx => {
+        // 获取身份信息
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        if(userInfo == null) {
+            console.log('[apiHandler - GET friendMessages] Authorization invalid.');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+
+        // 验证id合法性
+        var query = ctx.query;
+        if(!(await dao.isUserExist(userInfo._id))) {
+            ctx.body = {
+                'errCode': 600,
+                'errMessage': 'Sender not exist'
+            }
+            return;
+        }
+        if(!(await dao.existGroup(query._id))) {
+            ctx.body = {
+                'errCode': 601,
+                'errMessage': 'Group not exist'
+            }
+            return;
+        }
+
+        if(!(await dao.isGroupMember(userInfo._id, query._id))) {
+            ctx.body = {
+                'errCode': 601,
+                'errMessage': 'you are not a member of this group'
+            }
+            return;
+        }
+        
+        [err, res] = await dao.getGroupMessages(query._id, query.startIndex, query.count);
+        
+        if(err != null){
+            ctx.body = {
+                'errCode': err != null ? 100 : null,
+                'errMessage': err
+            }
+            return;
+        }
+        
+        ctx.body = {
+            'result': res
+        };
+
+    })
+/*
+    router.get('/unreadGroupMessages', async ctx => {
+        // 获取身份信息
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        if(userInfo == null) {
+            console.log('[apiHandler - GET unreadMessages] Authorization invalid.');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+
+
+
+        [err, res] = await dao.getUnreadGroupMessages(userInfo._id, query._id);
+        
+        if(err != null){
+            ctx.body = {
+                'errCode': err != null ? 100 : null,
+                'errMessage': err
+            }
+            return;
+        }
+        
+        // 将未读消息按 group 分类
+        var res_sort = {};
+        for(const message of res) {
+            if(!res_sort[message.group._id]) { 
+                res_sort[message.group._id] = {
+                    group: message.group,
+                    messages: []
+                }; 
+            }
+            res_sort[message.group._id].messages.push({
+                _id: message._id,
+                sender: message.sender,
+                content: message.content,
+                time: message.time,
+                unreadNum: message.unreader.length
+            });
+        }
+
+        ctx.body = {
+            'result': res_sort
+        };
+    })
+*/
+    router.put('/readGroupMessages', async ctx => {
+        // 获取身份信息
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        if(userInfo == null) {
+            console.log('[apiHandler - PUT messageRead] Authorization invalid.');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+
+        // 验证id合法性
+        var body = ctx.request.body;
+        if(!(await dao.isUserExist(userInfo._id))) {
+            ctx.body = {
+                'errCode': 600,
+                'errMessage': 'Self not exist'
+            }
+            return;
+        }
+
+        [err, res] = await dao.setGroupMessagesRead(userInfo._id, body._ids);
+        
+        if(err != null){
+            ctx.body = {
+                'errCode': err != null ? 100 : null,
+                'errMessage': err
+            }
+            return;
+        }
+        
+        ctx.body = {
+            'result': res
+        };
+
+    })
+
+    router.put('/messagesReadFromGroup', async ctx => {
+        // 获取身份信息
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        if(userInfo == null) {
+            console.log('[apiHandler - PUT messageReadFrom] Authorization invalid.');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+
+        // 验证id合法性
+        var body = ctx.request.body;
+        if (!dao.isObjectIdValid(userInfo._id)) {
+            ctx.body = {
+                'errCode': 600,
+                'errMessage': 'Self not exist'
+            }
+            return;
+        }
+        if (!dao.isObjectIdValid(body._id)) {
+            ctx.body = {
+                'errCode': 601,
+                'errMessage': 'Sender not exist'
+            }
+            return;
+        }
+
+        [err, res] = await dao.setGroupMessagesReadFrom(userInfo._id, body._id);
+        
+        if(err != null){
+            ctx.body = {
+                'errCode': err != null ? 100 : null,
+                'errMessage': err
+            }
+            return;
+        }
+        
+        ctx.body = {
+            'result': res
+        };
+
+    })
+    /***********************************add new code end******************************************/
 
     router.get('/test/user/:_id', async ctx => {
         [err, res] = await dao.getUserById(ctx.params._id);

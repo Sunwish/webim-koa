@@ -1241,3 +1241,169 @@ function groupMembersSearch (groupId, content, fuzzy) {
     .then(res => [null, res])
     .catch(err => [err]);
 }
+
+
+/******************************** new add code start ********************************/
+/******************************** GroupMessage *********************************/
+/*
+const senderPopulateFields = {
+    _id: 1,
+    username: 1,
+    nickname: 1,
+    avatar: 1,
+    imgUrl: 1
+};
+exports.senderPopulateFields = senderPopulateFields;
+*/
+exports.addGroupMessage =
+function addGroupMessage(sender, groupId, content, time){
+    var group = await models.groupModel.findById({
+        _id: groupId
+    }).exec(); 
+    var unreaders = group.managers.concat(group.members,group.owner);
+    return models.groupMessageModel.create({
+        sender: sender,
+        group: groupId,
+        content: content,
+        time: time,
+        readers: [],
+        unreaders: unreaders
+    })
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
+
+exports.getGroupMessages =
+function getGroupMessages( groupId, startIndex = 0, count = 50) {
+    return models.groupMessageModel.find({
+        group: groupId
+    })
+    .sort( { time: -1 } )
+    .skip(+startIndex)
+    .limit(+count)
+    .populate({
+        path: 'sender',
+        select: senderPopulateFields
+    })
+    .populate({
+        path: 'group',
+        select: groupPopulateFields
+    })
+    .exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
+
+exports.getUnreadGroupMessages =
+function getUnreadGroupMessages(userId) {
+    return models.groupMessageModel.find({
+        unreaders: userId
+    }).populate({
+        path: 'sender',
+        select: senderPopulateFields
+    }).populate({
+        path: 'group',
+        select: groupPopulateFields
+    })
+    .sort( { time: -1 } )
+    .exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
+
+exports.setGroupMessagesRead =
+function setGroupMessagesRead (receiverId, groupMessageIds) {
+    // Use transaction for update 
+   var session = await models.groupMessageModel.startSession();
+   session.startTransaction();
+    var promises = [];
+    for (const _id of groupMessageIds) {
+        promises.push(await models.groupMessageModel.findByIdAndUpdate(
+            { _id: _id }, 
+            { $pull: { unreaders: receiverId }}
+        ).exec().then(() => true).catch(() => false))
+        promises.push(await models.groupMessageModel.findByIdAndUpdate(
+            { _id: _id }, 
+            { $push: { readers: receiverId }}
+        ).exec().then(() => true).catch(() => false))
+    }
+    await Promise.all(promises)
+    .then(res => [null, res])
+    .catch(err => [err]);
+    if(err){
+       await session.abortTransaction();
+       session.endSession();
+       return [err, false]
+    }
+    await session.commitTransaction();
+    session.endSession();
+    return [null, true];
+}
+
+//获取群消息接受成员
+exports.getGroupMessageReceivers =
+function getGroupMessageReceivers (groupId) {
+    return models.groupModel.find({
+            _id:groupId
+    })
+    
+    .select("owner managers members")
+    .exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
+
+//获取群组信息
+exports.getGroupById =
+function getGroupById (groupId) {
+    return models.groupModel.find({
+            _id:groupId
+    })
+    .select("-owner -managers -members")
+    .exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
+
+exports.setGroupMessagesReadFrom =
+function setGroupMessagesReadFrom (_idSelf, groupId) {
+    // Use transaction for update 
+   var session = await models.groupMessageModel.startSession();
+   session.startTransaction();
+    await models.groupMessageModel.updateMany({
+        group: groupId,
+        unreaders: _idSelf
+    }, {
+        $pull: { unreaders: _idSelf}
+    }).exec()
+    .then(() => [null, true])
+    .catch(() => [err]);
+
+    if(err){
+        await session.abortTransaction();
+        session.endSession();
+        return [err, false]
+     }
+
+    await models.groupMessageModel.updateMany({
+        group: groupId,
+        unreaders: _idSelf
+    }, {
+        $push: { readers: _idSelf}
+    }).exec()
+    .then(() => [null, true])
+    .catch(() => [err]);
+
+    if(err){
+        await session.abortTransaction();
+        session.endSession();
+        return [err, false]
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+    return [null, true];
+}
+
+
+/******************************* new add code end ********************************/
