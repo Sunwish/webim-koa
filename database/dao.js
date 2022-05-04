@@ -1484,3 +1484,14 @@ function getNotificationById(_id) {
     .then(res => [null, res])
     .catch(err => [err]);
 }
+
+exports.getNotificationByIdAndReceiver =
+function getNotificationById(_id, _idSelf) {
+    return models.notificationModel.findOne({
+        _id: _id,
+        receiver: _idSelf
+    })
+    .exec()
+    .then(res => [null, res])
+    .catch(err => [err]);
+}
