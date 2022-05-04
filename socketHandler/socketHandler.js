@@ -319,7 +319,8 @@ function handleSocket(io) {
         
         socket.on('notification_friend_add_refuse', async (data, callback) => {
             var senderid = socketid2userid[socket.id];
-            [err, notification] = await dao.getNotificationById(data._id);
+            // only can get notification sent to self
+            [err, notification] = await dao.getNotificationByIdAndReceiver(data._id, senderid);
             if(err) {
                 if(callback) {
                     callback({

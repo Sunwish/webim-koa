@@ -383,7 +383,8 @@ function handleApi (router) {
         }
         var notificationId = ctx.request.body._id;
         // 验证好友请求id合法性
-        [err, notification] = await dao.getNotificationById(notificationId);
+        // only get notification sent to self
+        [err, notification] = await dao.getNotificationByIdAndReceiver(notificationId, userInfo._id);
         if(err != null){
             ctx.body = {
                 'errCode': err != null ? 100 : null,
