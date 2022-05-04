@@ -3,10 +3,13 @@ const dao = require('../database/dao');
 const redis = require('../database/redis');
 const path = require('path'); // 路径模块
 const fs = require('fs');
+const { onlineUsers } = require('../socketHandler/socketHandler');
 
 const config = require('../config.json');
 const jwtSecret = config.jwtSecret;
 const avatarDir = path.join(__dirname, '../public/uploads/avatars/');
+
+const newFriendHelloContent = "我们已经成为好友啦！";
 
 exports.handleApi = 
 function handleApi (router) {
@@ -353,6 +356,76 @@ function handleApi (router) {
             }
             return;
         }
+
+        // send hello message
+        /*
+        [errr, ress] = await dao.addMessage(userInfo._id, targetId, newFriendHelloContent, new Date().getTime());
+        let targetSocket = onlineUsers[targetId]
+        if(ress && targetSocket) {
+            targetSocket.emit("message_friend", ress);
+        }*/
+
+        ctx.body = {
+            'result': res
+        };
+    })
+
+    router.post('/friendByRequestId', async ctx => {
+        // 获取身份信息
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        if(userInfo == null) {
+            console.log('[apiHandler - POST friendByRequestId] Authorization invalid.');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+        var notificationId = ctx.request.body._id;
+        // 验证好友请求id合法性
+        [err, notification] = await dao.getNotificationById(notificationId);
+        if(err != null){
+            ctx.body = {
+                'errCode': err != null ? 100 : null,
+                'errMessage': err
+            }
+            return;
+        }
+        if(!notification) {
+            ctx.body = {
+                'errCode': 100,
+                'errMessage': "Request not exist."
+            }
+            return;
+        }
+        // 验证是否不是好友
+        if (await dao.isFriend(notification.sender, notification.receiver)) {
+            ctx.body = {
+                'errCode': 503,
+                'errMessage': 'Friend relationship already exists.'
+            }
+            return;
+        }
+
+        [err, res] = await dao.addFriend(notification.sender, notification.receiver)
+        if(err != null){
+            ctx.body = {
+                'errCode': err != null ? 100 : null,
+                'errMessage': err
+            }
+            return;
+        }
+
+        // send hello message
+        [errr, ress] = await dao.addMessage(userInfo._id, notification.sender, newFriendHelloContent, new Date().getTime());
+        let targetSocket = onlineUsers[notification.sender]
+        if(ress && targetSocket) {
+            targetSocket.emit("message_friend", ress);
+        }
+
+        // mark result of notification
+        await dao.markNotificationResult(notificationId, userInfo._id, 1);
+
         ctx.body = {
             'result': res
         };
@@ -519,6 +592,12 @@ function handleApi (router) {
                 'errMessage': err
             }
             return;
+        }
+        
+        // send socket message
+        let targetSocket = onlineUsers[body._id]
+        if(res && targetSocket) {
+            targetSocket.emit("message_friend", res);
         }
         
         ctx.body = {
@@ -735,6 +814,46 @@ function handleApi (router) {
         };
 
     })
+    
+    /////////////////////////////////////////////////////////////////////////////////////////// Notification
+    router.put('/notificationsRead', async ctx => {
+        // 获取身份信息
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        if(userInfo == null) {
+            console.log('[apiHandler - PUT notificationsRead] Authorization invalid.');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+
+        // 验证id合法性
+        var body = ctx.request.body;
+        if(!(await dao.isUserExist(userInfo._id))) {
+            ctx.body = {
+                'errCode': 600,
+                'errMessage': 'Self not exist'
+            }
+            return;
+        }
+
+        [err, res] = await dao.setNotificationsRead(body._ids, userInfo._id);
+        
+        if(err != null){
+            ctx.body = {
+                'errCode': err != null ? 100 : null,
+                'errMessage': err
+            }
+            return;
+        }
+        
+        ctx.body = {
+            'result': res
+        };
+
+    })
+    
 
     /////////////////////////////////////////////////////////////////////////////////////////// 群组api
     //上传群组头像
