@@ -3,6 +3,15 @@ const dao = require('../database/dao');
 var onlineUsers = {};
 var socketid2userid = {};
 
+function notificationTypeToEventName(type) {
+    switch(type) {
+        case 200: return "notification_friend_add_request";
+        case 201: return "notification_friend_add_refuse";
+        default: return null;
+    }
+}
+
+exports.onlineUsers = onlineUsers;
 exports.handleSocket = 
 function handleSocket(io) {
     io.on('connection', async socket => {
@@ -28,7 +37,7 @@ function handleSocket(io) {
 
             // get unread messages from db
             if (callback) callback({ "result": true });
-            [err, res] = await dao.getUnreadMessages(userInfo._id);
+            let [err, res] = await dao.getUnreadMessages(userInfo._id);
             if (err) {
                 socket.emit('unread', {
                     "errCode": 100,
@@ -37,8 +46,19 @@ function handleSocket(io) {
                 return;
             }
             
+            // get unread notifications from db
+            let [err_notifications, res_notifications] = await dao.getUnreadNotifications(userInfo._id);
+            if (err_notifications) {
+                socket.emit('unread', {
+                    "errCode": 100,
+                    "errMessage": err
+                });
+                return;
+            }
             // sort unread messages by sender
             var res_sort = {};
+            //console.log("res in socket auth:");
+            //console.log(res);
             for(const message of res) {
                 if(!res_sort[message.sender._id]) { 
                     res_sort[message.sender._id] = {
@@ -52,6 +72,18 @@ function handleSocket(io) {
                     time: message.time
                 });
             }
+            // sort notifications by type
+            var notifcxs_sort = {};
+            for(const notification of res_notifications) {
+                let notificationEventName = notificationTypeToEventName(notification.type);
+                if(!notifcxs_sort[notificationEventName]) { 
+                    notifcxs_sort[notificationEventName] = []; 
+                }
+                notifcxs_sort[notificationEventName].push({
+                    notification
+                });
+            }
+
 
              /************************************************/
             // get unread Group messages from db
@@ -86,7 +118,8 @@ function handleSocket(io) {
             socket.emit('unread', {
                 "result": {
                     "friend": res_sort,
-                    "group": group_res_sort
+                    "group": group_res_sort,
+                    "notifications": notifcxs_sort
                 }
             })
 
@@ -110,7 +143,7 @@ function handleSocket(io) {
             // check receiver exist
             if (dao.isUserExist(data._id)) {
                 // insert message into db
-                [err, res] = await dao.addMessage(senderid, data._id, data.content, data.time);
+                let [err, res] = await dao.addMessage(senderid, data._id, data.content, data.time);
 
                 // insert failed
                 if (err) {
@@ -132,10 +165,67 @@ function handleSocket(io) {
                     var receiverSocket = onlineUsers[data._id];
                     if (receiverSocket) {
                         // polulate sender info
-                        [_err, _res] = await dao.getUserById(senderid, dao.senderPopulateFields);
+                        let [_err, _res] = await dao.getUserById(senderid, dao.senderPopulateFields);
+                        res.sender = _res;
+                        // emit request notification
+                        receiverSocket.emit('message_friend', res);
+                    }
+                }
+            }
+            // receiver not eixist
+            else {
+                if (callback) {
+                    callback({
+                    "errCode": 601,
+                    "errMessage": 'Receiver not exist'
+                    });
+                }
+            }
+        })
+        
+        socket.on('notification_friend_add_request', async (data, callback) => {
+            var senderid = socketid2userid[socket.id];
+
+            // check receiver exist
+            if (dao.isUserExist(data._id)) {
+                // check is already friend
+                if(await dao.isFriend(senderid, data._id)) {
+                    if(callback) {
+                        callback({
+                            'errCode': 503,
+                            'errMessage': 'Friend relationship already exists.'
+                        });
+                    }
+                    return;
+                }
+
+                // insert message into db
+                let [err, res] = await dao.addNotification(senderid, data._id, 200, data.content, data.time);
+
+                // insert failed
+                if (err) {
+                    if (callback) {
+                        callback({
+                        "errCode": 100,
+                        "errMessage": err
+                        });
+                    }
+                }
+                // insert succeed
+                else {
+                    if (callback) {
+                        callback({
+                        "result": res
+                        });
+                    }
+                    // try send to receiver by socket
+                    var receiverSocket = onlineUsers[data._id];
+                    if (receiverSocket) {
+                        // polulate sender info
+                        let [_err, _res] = await dao.getUserById(senderid, dao.senderPopulateFields);
                         res.sender = _res;
                         // emit new message
-                        receiverSocket.emit('message_friend', res, received => {
+                        receiverSocket.emit('notification_friend_add_request', res, received => {
                             if (received) {
                                 /**
                                  * NOT IMPLEMENT: set message state read
@@ -154,6 +244,7 @@ function handleSocket(io) {
                     });
                 }
             }
+
         })
 
         socket.on('message_group', async (data, callback) => {
@@ -226,6 +317,73 @@ function handleSocket(io) {
             }
         })
         
+        socket.on('notification_friend_add_refuse', async (data, callback) => {
+            var senderid = socketid2userid[socket.id];
+            [err, notification] = await dao.getNotificationById(data._id);
+            if(err) {
+                if(callback) {
+                    callback({
+                        "errCode": 100,
+                        "errMessage": err
+                    });
+                }
+                return;
+            }
+            if(notification.status != 0) {
+                if(callback) {
+                    callback({
+                        "errCode": 100,
+                        "errMessage": "This request was already refuesed."
+                    });
+                }
+                return;
+            }
+            // check receiver exist
+            if (notification.sender) {
+                // insert message into db
+                [err, res] = await dao.addNotification(senderid, notification.sender, 201, data.content, data.time);
+
+                // insert failed
+                if (err) {
+                    if (callback) {
+                        callback({
+                        "errCode": 100,
+                        "errMessage": err
+                        });
+                    }
+                }
+                // insert succeed
+                else {
+                    if (callback) {
+                        callback({
+                        "result": res
+                        });
+                    }
+                    // mark notification result
+                    await dao.markNotificationResult(data._id, senderid, 2);
+                    // try send to receiver by socket
+                    var receiverSocket = onlineUsers[notification.sender];
+                    if (receiverSocket) {
+                        // polulate sender info
+                        [_err, _res] = await dao.getUserById(senderid, dao.senderPopulateFields);
+                        res.sender = _res;
+                        // emit refuse notification
+                        receiverSocket.emit('notification_friend_add_refuse', res);
+
+                    }
+                }
+            }
+            // receiver not eixist
+            else {
+                if (callback) {
+                    callback({
+                    "errCode": 601,
+                    "errMessage": 'Receiver not exist'
+                    });
+                }
+            }
+        })
+
         socket.on('disconnect', async () => {
             //console.log('socket ' + socket.id + ' disconnected');
 
