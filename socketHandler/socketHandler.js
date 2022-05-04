@@ -78,7 +78,7 @@ function handleSocket(io) {
                     sender: message.sender,
                     content: message.content,
                     time: message.time,
-                    unreadNum: message.unreader.length
+                    unreadNum: message.unreaders
                 });
             }
 
