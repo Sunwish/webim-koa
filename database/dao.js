@@ -1430,7 +1430,7 @@ function getGroupById (groupId) {
     return models.groupModel.find({
             _id:groupId
     })
-    .select("-owner -managers -members")
+    .select(groupPopulateFields)
     .exec()
     .then(res => [null, res])
     .catch(err => [err]);
