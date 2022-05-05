@@ -1003,7 +1003,7 @@ function handleApi (router) {
             return;
         }
         // create group
-        var defulatAvarar = 'blank-avatar.png';
+        var defulatAvarar = 'group-avatar.png';
         [err, res] = await dao.createGroup({
             'groupnickname': body.groupnickname,
             'groupnumber': 0,

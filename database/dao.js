@@ -1427,7 +1427,7 @@ function markNotificationResult(_id, _idSelf, result) {
 //获取群组信息
 exports.getGroupById =
 function getGroupById (groupId) {
-    return models.groupModel.find({
+    return models.groupModel.findById({
             _id:groupId
     })
     .select(groupPopulateFields)
