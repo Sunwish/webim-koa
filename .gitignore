@@ -3,6 +3,8 @@ node_modules
 /dist
 /public/uploads/avatars/*
 !/public/uploads/avatars/blank-avatar.png
+/public/uploads/images/*
+!/public/uploads/images/blank-image.png
 
 # local env files
 .env.local

@@ -8,6 +8,7 @@ const { onlineUsers } = require('../socketHandler/socketHandler');
 const config = require('../config.json');
 const jwtSecret = config.jwtSecret;
 const avatarDir = path.join(__dirname, '../public/uploads/avatars/');
+const imageDir = path.join(__dirname, '../public/uploads/images/');
 
 const newFriendHelloContent = "我们已经成为好友啦！";
 
@@ -211,6 +212,65 @@ function handleApi (router) {
                 resolve();
             }).on('error', (err) => {
                 console.log('[apiHandler - POST upload/avatar] Pipe file error.');
+                ctx.body = {
+                    'errCode': 100,
+                    'errMessage': 'pipe file error',
+                };
+                reject(err)
+            });
+        });
+    })
+    router.post('/upload/image', async ctx => {
+        // 身份认证
+        const userInfo = jwt.decode(ctx.header.authorization.split(' ')[1]);
+        if(userInfo == null) {
+            console.log('[apiHandler - POST upload/image] Authorization invalid.');
+            ctx.body = {
+                'errCode': 301,
+                'errMessage': 'authorization invalid',
+            };
+            return;
+        }
+
+        // 上传图像参数验证
+        if(!ctx.request.files || !ctx.request.files.file || !ctx.request.files.file.path || !ctx.request.files.file.name) {
+            console.log('param error');
+            ctx.body = {
+                'errCode': 302,
+                'errMessage': 'param error',
+            };
+            return;
+        }
+        const file = ctx.request.files.file;
+        // 创建读取流
+        const reader = fs.createReadStream(file.path);
+        const fileName = userInfo._id + '-' + Date.now() + '.jpg';
+        const filePath = imageDir + fileName;
+        // 创建写入流
+        const upStream = fs.createWriteStream(filePath);
+        upStream.on('error', () => {
+            console.log('server file path error');
+            ctx.body = {
+                'errCode': 100,
+                'errMessage': 'server file path error',
+            };
+            return;
+        });
+
+        // 从读取流通过管道写进写入流
+        console.log('[apiHandler - POST upload/image] Piping avatar file to server disk.');
+        await new Promise((resolve, reject) => {
+            reader.pipe(upStream).on('finish', async () => {
+                console.log('[apiHandler - POST upload/image] Pipe file finish.');
+                ctx.body = {
+                    'result' : {
+                        'imgName': fileName,
+                        'imgUrl' : ctx.request.header.host + '/uploads/avatars/' + fileName
+                    }
+                };
+                resolve();
+            }).on('error', (err) => {
+                console.log('[apiHandler - POST upload/image] Pipe file error.');
                 ctx.body = {
                     'errCode': 100,
                     'errMessage': 'pipe file error',
