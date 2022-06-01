@@ -265,7 +265,7 @@ function handleApi (router) {
                 ctx.body = {
                     'result' : {
                         'imgName': fileName,
-                        'imgUrl' : ctx.request.header.host + '/uploads/avatars/' + fileName
+                        'imgUrl' : ctx.request.header.host + '/uploads/images/' + fileName
                     }
                 };
                 resolve();
